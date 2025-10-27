@@ -1,0 +1,25 @@
+{
+  "name": "TRAZA - Gestión de Proyectos Arquitectónicos",
+  "short_name": "TRAZA",
+  "description": "Plataforma mobile-first para gestión de proyectos de arquitectura",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F5F5F5",
+  "theme_color": "#3B82F6",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

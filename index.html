@@ -1,0 +1,2440 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TRAZA - Gestión de Proyectos Arquitectónicos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'traza-gray': '#F5F5F5',
+                        'traza-dark': '#1A1A1A',
+                        'traza-red': '#DC2626',
+                        'traza-yellow': '#FCD34D',
+                        'traza-green': '#10B981',
+                        'traza-blue': '#3B82F6',
+                    },
+                },
+            },
+        };
+    </script>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#3B82F6">
+
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    
+    <meta name="apple-mobile-web-app-title" content="TRAZA">
+    
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+</head>
+<body class="bg-traza-gray min-h-screen pb-20">
+    <style>
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            overscroll-behavior: none;
+        }
+        .calendar-day {
+            aspect-ratio: 1;
+        }
+        .slide-in {
+            transform: translateX(-100%);
+            transition: transform 0.3s ease-in-out;
+        }
+        .slide-in.active {
+            transform: translateX(0);
+        }
+        .smooth-transition {
+            transition: all 0.3s ease;
+        }
+        @media (max-width: 640px) {
+            .mobile-optimized {
+                font-size: 16px;
+            }
+        }
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+        .area-collapsed {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .area-expanded {
+            max-height: 2000px;
+            transition: max-height 0.5s ease-in;
+        }
+
+        /* Mobile UX Improvements */
+        .btn-touch {
+            min-height: 44px;
+            min-width: 44px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Ripple effect */
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.6);
+            transform: scale(0);
+            animation: ripple-animation 0.6s ease-out;
+            pointer-events: none;
+        }
+
+        @keyframes ripple-animation {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background-color: #1A1A1A;
+            color: white;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            max-width: 90%;
+            text-align: center;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* Swipe action container */
+        .swipe-container {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .swipe-content {
+            position: relative;
+            background: white;
+            transition: transform 0.3s ease;
+            z-index: 2;
+        }
+
+        .swipe-actions {
+            position: absolute;
+            top: 0;
+            right: 0;
+            height: 100%;
+            display: flex;
+            align-items: stretch;
+            z-index: 1;
+        }
+
+        .swipe-action {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 80px;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        /* Bottom sheet modal */
+        .bottom-sheet {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .bottom-sheet.active {
+            transform: translateY(0);
+        }
+
+        .bottom-sheet-handle {
+            width: 40px;
+            height: 4px;
+            background: #D1D5DB;
+            border-radius: 2px;
+            margin: 12px auto 8px;
+        }
+
+        /* Backdrop */
+        .backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 99;
+        }
+
+        .backdrop.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        /* Loading spinner */
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3B82F6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Pulse animation for buttons */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .pulse {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        /* Better active states */
+        .active-scale:active {
+            transform: scale(0.97);
+        }
+
+        /* Floating action button */
+        .fab {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: #3B82F6;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+            z-index: 50;
+            transition: all 0.3s;
+        }
+
+        .fab:active {
+            transform: scale(0.9);
+        }
+
+        /* Status badge pulse */
+        .badge-pulse {
+            animation: badge-pulse 2s infinite;
+        }
+
+        @keyframes badge-pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
+            }
+            50% {
+                box-shadow: 0 0 0 6px rgba(220, 38, 38, 0);
+            }
+        }
+
+        /* Swipe hint */
+        .swipe-hint {
+            position: absolute;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
+            color: #9CA3AF;
+            font-size: 11px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            opacity: 0.8;
+            animation: swipe-hint-animation 2s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        @keyframes swipe-hint-animation {
+            0%, 100% {
+                transform: translateY(-50%) translateX(0);
+                opacity: 0.8;
+            }
+            50% {
+                transform: translateY(-50%) translateX(-10px);
+                opacity: 0.4;
+            }
+        }
+
+        .fade-out {
+            animation: fade-out 0.5s ease-out forwards;
+        }
+
+        @keyframes fade-out {
+            to {
+                opacity: 0;
+                visibility: hidden;
+            }
+        }
+
+        /* Calendar animations */
+        #calendarGrid {
+            transition: opacity 0.2s ease;
+        }
+
+        #calendarGrid.fade {
+            opacity: 0.3;
+        }
+
+        .calendar-day {
+            transition: all 0.2s ease;
+        }
+
+        .calendar-day:hover {
+            transform: scale(1.05);
+        }
+
+        .calendar-day:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body class="bg-traza-gray min-h-screen pb-20">
+    <!-- Header -->
+    <header class="bg-white border-b sticky top-0 z-40 shadow-sm">
+        <div class="px-4 py-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <button
+                        onclick="toggleMenu()"
+                        class="p-2 rounded-lg hover:bg-gray-100 transition-colors active:bg-gray-200"
+                    >
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                    <div>
+                        <p class="text-[10px] text-gray-500 uppercase tracking-wider">Proyecto</p>
+                        <h1 class="font-semibold text-sm">Departamento Agua del Palo</h1>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="showView('notificaciones')" class="relative p-2 hover:bg-gray-100 rounded-lg btn-touch">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                        </svg>
+                        <span class="absolute top-1 right-1 w-2 h-2 bg-traza-red rounded-full badge-pulse"></span>
+                    </button>
+                    <div class="text-xs font-bold text-traza-dark pl-2 border-l">TRAZA</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Menú lateral -->
+    <div id="sideMenu" class="fixed inset-0 z-50 pointer-events-none">
+        <div
+            id="overlay"
+            class="absolute inset-0 bg-black bg-opacity-0 transition-opacity duration-300"
+            onclick="toggleMenu()"
+        ></div>
+        <nav id="menuPanel" class="absolute left-0 top-0 h-full w-72 bg-white shadow-xl slide-in overflow-y-auto">
+            <div class="p-4 border-b bg-traza-dark text-white">
+                <h2 class="font-bold text-lg">TRAZA</h2>
+                <p class="text-xs text-gray-300 mt-1">Gestión de Proyectos</p>
+            </div>
+
+            <div class="p-3">
+                <!-- Visitas -->
+                <button
+                    onclick="showView('visitas'); toggleMenu();"
+                    class="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-between group mb-1"
+                >
+                    <div class="flex items-center gap-3">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <span class="text-sm font-medium">Visitas</span>
+                    </div>
+                </button>
+
+                <!-- Pendientes -->
+                <button
+                    onclick="showView('pendientes'); toggleMenu();"
+                    class="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-between mb-1"
+                >
+                    <div class="flex items-center gap-3">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                        <span class="text-sm font-medium">Pendientes</span>
+                    </div>
+                    <span class="bg-traza-red text-white text-[10px] px-2 py-0.5 rounded-full font-medium">4</span>
+                </button>
+
+                <!-- Presupuesto -->
+                <button
+                    onclick="showView('presupuesto'); toggleMenu();"
+                    class="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-3 mb-1"
+                >
+                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span class="text-sm font-medium">Presupuesto / Gastos</span>
+                </button>
+
+                <!-- Permisos -->
+                <button
+                    onclick="showView('permisos'); toggleMenu();"
+                    class="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-3 mb-1"
+                >
+                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                    </svg>
+                    <span class="text-sm font-medium">Permisos</span>
+                </button>
+
+                <!-- Documentos -->
+                <button
+                    onclick="showView('documentos'); toggleMenu();"
+                    class="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-3 mb-1"
+                >
+                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                    </svg>
+                    <span class="text-sm font-medium">Documentos</span>
+                </button>
+
+                <!-- Notas -->
+                <button
+                    onclick="showView('notas'); toggleMenu();"
+                    class="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-3 mb-1"
+                >
+                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                    <span class="text-sm font-medium">Notas</span>
+                </button>
+
+                <!-- Equipo -->
+                <button
+                    onclick="showView('equipo'); toggleMenu();"
+                    class="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-between mb-1"
+                >
+                    <div class="flex items-center gap-3">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                        <span class="text-sm font-medium">Equipo</span>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Cambiar proyecto -->
+            <div class="absolute bottom-0 left-0 right-0 p-4 border-t bg-gray-50">
+                <button class="w-full text-left text-xs text-gray-600 hover:text-gray-900 flex items-center justify-between">
+                    <span>Cambiar proyecto</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </button>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Vista de Visitas -->
+    <div id="visitas-view" class="view">
+        <div class="p-4 space-y-4">
+            <!-- Calendario -->
+            <div class="bg-white rounded-xl shadow-sm p-4">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 id="calendarMonth" class="font-semibold text-lg">Julio 2025</h2>
+                    <div class="flex gap-2">
+                        <button onclick="previousMonth()" class="p-1.5 hover:bg-gray-100 rounded-lg active-scale btn-touch">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                            </svg>
+                        </button>
+                        <button onclick="goToToday()" class="px-3 py-1.5 text-xs font-medium text-traza-blue hover:bg-blue-50 rounded-lg active-scale btn-touch">
+                            Hoy
+                        </button>
+                        <button onclick="nextMonth()" class="p-1.5 hover:bg-gray-100 rounded-lg active-scale btn-touch">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Días de la semana -->
+                <div class="grid grid-cols-7 gap-1 mb-2">
+                    <div class="text-center text-xs text-gray-500 py-2 font-medium">L</div>
+                    <div class="text-center text-xs text-gray-500 py-2 font-medium">M</div>
+                    <div class="text-center text-xs text-gray-500 py-2 font-medium">M</div>
+                    <div class="text-center text-xs text-gray-500 py-2 font-medium">J</div>
+                    <div class="text-center text-xs text-gray-500 py-2 font-medium">V</div>
+                    <div class="text-center text-xs text-gray-500 py-2 font-medium">S</div>
+                    <div class="text-center text-xs text-gray-500 py-2 font-medium">D</div>
+                </div>
+
+                <!-- Días del mes (generado dinámicamente) -->
+                <div
+                    id="calendarGrid"
+                    class="grid grid-cols-7 gap-1"
+                    ontouchstart="handleCalendarSwipeStart(event)"
+                    ontouchmove="handleCalendarSwipeMove(event)"
+                    ontouchend="handleCalendarSwipeEnd(event)"
+                >
+                    <!-- Días se generan con JavaScript -->
+                </div>
+
+                <!-- Leyenda -->
+                <div class="flex gap-4 mt-4 text-xs flex-wrap">
+                    <div class="flex items-center gap-1.5">
+                        <div class="w-2.5 h-2.5 bg-traza-green rounded-full"></div>
+                        <span class="text-gray-600">Realizada</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <div class="w-2.5 h-2.5 bg-traza-red rounded-full"></div>
+                        <span class="text-gray-600">Hoy</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <div class="w-2.5 h-2.5 bg-traza-yellow rounded-full"></div>
+                        <span class="text-gray-600">Próxima</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <div class="w-2.5 h-2.5 bg-blue-500 rounded-full"></div>
+                        <span class="text-gray-600">Programada</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historial de visitas -->
+            <div class="bg-white rounded-xl shadow-sm p-4">
+                <h3 class="font-medium mb-3">Historial de visitas</h3>
+                <div class="space-y-2">
+                    <button onclick="toggleVisitaDetalle('visita-22-10')" class="w-full text-left p-3 bg-gray-50 rounded-lg hover:bg-gray-100 active-scale">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium">22/10/25 - 09:00 hrs</span>
+                            <svg id="arrow-visita-22-10" class="w-4 h-4 smooth-transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </div>
+                    </button>
+                    <div id="detalle-visita-22-10" class="area-collapsed overflow-hidden">
+                        <div class="p-3 bg-white border rounded-lg text-xs text-gray-600 ml-2">
+                            <p class="mb-2"><strong>Notas:</strong> Revisión de avances en cocina y baño. Instalación de cerámicos completada.</p>
+                            <p><strong>Áreas:</strong> Cocina, Baño, Hall entrada</p>
+                        </div>
+                    </div>
+
+                    <button onclick="toggleVisitaDetalle('visita-15-10')" class="w-full text-left p-3 bg-gray-50 rounded-lg hover:bg-gray-100 active-scale">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium">15/10/25 - 11:30 hrs</span>
+                            <svg id="arrow-visita-15-10" class="w-4 h-4 smooth-transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </div>
+                    </button>
+                    <div id="detalle-visita-15-10" class="area-collapsed overflow-hidden">
+                        <div class="p-3 bg-white border rounded-lg text-xs text-gray-600 ml-2">
+                            <p class="mb-2"><strong>Notas:</strong> Reunión con especialistas de iluminación. Definición de luminarias para sala y comedor.</p>
+                            <p><strong>Áreas:</strong> Sala de estar, Comedor</p>
+                        </div>
+                    </div>
+
+                    <button onclick="toggleVisitaDetalle('visita-08-10')" class="w-full text-left p-3 bg-gray-50 rounded-lg hover:bg-gray-100 active-scale">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium">08/10/25 - 14:00 hrs</span>
+                            <svg id="arrow-visita-08-10" class="w-4 h-4 smooth-transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </div>
+                    </button>
+                    <div id="detalle-visita-08-10" class="area-collapsed overflow-hidden">
+                        <div class="p-3 bg-white border rounded-lg text-xs text-gray-600 ml-2">
+                            <p class="mb-2"><strong>Notas:</strong> Inspección de trabajos de construcción. Avance según cronograma.</p>
+                            <p><strong>Áreas:</strong> Todas las áreas</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detalle de visita actual -->
+            <div class="bg-white rounded-xl shadow-sm p-4">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-medium text-lg">Visita 27/10/25</h3>
+                    <span class="text-xs bg-traza-red text-white px-3 py-1 rounded-full font-medium pulse">En curso</span>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-xs text-gray-500 uppercase tracking-wider block mb-2 font-medium">Notas generales</label>
+                        <textarea
+                            class="mobile-optimized w-full p-3 border rounded-lg resize-none text-sm focus:ring-2 focus:ring-traza-blue focus:border-transparent"
+                            rows="3"
+                            placeholder="Agregar observaciones generales de la visita..."
+                        ></textarea>
+                    </div>
+
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="text-xs text-gray-500 uppercase tracking-wider font-medium">Áreas visitadas</label>
+                            <button class="text-xs text-traza-blue font-medium hover:underline">+ Agregar área</button>
+                        </div>
+                        <div class="space-y-2">
+                            <!-- Sala de estar -->
+                            <button onclick="toggleAsunto('sala-estar')" class="w-full text-left p-3 bg-gray-50 border rounded-lg hover:bg-gray-100 transition-colors flex items-center justify-between">
+                                <span class="text-sm font-medium">Sala de estar</span>
+                                <svg id="arrow-sala-estar" class="w-4 h-4 text-gray-400 smooth-transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div id="asunto-sala-estar" class="area-collapsed pl-3 space-y-2">
+                                <div class="p-3 bg-white border rounded-lg space-y-2">
+                                    <input type="text" placeholder="Descripción de la tarea..." class="mobile-optimized w-full p-2 border rounded text-sm" value="Pintar muro verde" />
+                                    <select class="mobile-optimized w-full p-2 border rounded text-sm">
+                                        <option>Seleccionar encargado</option>
+                                        <option selected>Constructor</option>
+                                        <option>Lighting designer</option>
+                                        <option>Paisajista</option>
+                                    </select>
+                                    <textarea placeholder="Notas adicionales..." class="mobile-optimized w-full p-2 border rounded text-sm resize-none" rows="2"></textarea>
+                                </div>
+                                <button class="text-xs text-traza-blue ml-3 hover:underline">+ Agregar otra tarea</button>
+                            </div>
+                            
+                            <!-- Cocina -->
+                            <button onclick="toggleAsunto('cocina')" class="w-full text-left p-3 bg-gray-50 border rounded-lg hover:bg-gray-100 transition-colors flex items-center justify-between">
+                                <span class="text-sm font-medium">Cocina</span>
+                                <svg id="arrow-cocina" class="w-4 h-4 text-gray-400 smooth-transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div id="asunto-cocina" class="area-collapsed pl-3">
+                                <div class="p-3 bg-white border rounded-lg space-y-2">
+                                    <input type="text" placeholder="Descripción de la tarea..." class="mobile-optimized w-full p-2 border rounded text-sm" />
+                                    <select class="mobile-optimized w-full p-2 border rounded text-sm">
+                                        <option>Seleccionar encargado</option>
+                                        <option>Constructor</option>
+                                        <option>Lighting designer</option>
+                                        <option>Paisajista</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- Hall entrada -->
+                            <button onclick="toggleAsunto('hall')" class="w-full text-left p-3 bg-gray-50 border rounded-lg hover:bg-gray-100 transition-colors flex items-center justify-between">
+                                <span class="text-sm font-medium">Hall entrada</span>
+                                <svg id="arrow-hall" class="w-4 h-4 text-gray-400 smooth-transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div id="asunto-hall" class="area-collapsed pl-3">
+                                <div class="p-3 bg-white border rounded-lg space-y-2">
+                                    <input type="text" placeholder="Descripción de la tarea..." class="mobile-optimized w-full p-2 border rounded text-sm" />
+                                    <select class="mobile-optimized w-full p-2 border rounded text-sm">
+                                        <option>Seleccionar encargado</option>
+                                        <option>Constructor</option>
+                                        <option>Lighting designer</option>
+                                        <option>Paisajista</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button
+                        id="convertBtn"
+                        onclick="convertToPendientes()"
+                        class="w-full py-3 bg-traza-blue text-white rounded-lg font-medium hover:bg-blue-600 smooth-transition active-scale active:bg-blue-700"
+                    >
+                        Convertir en pendientes y notificar equipo
+                    </button>
+
+                    <p class="text-xs text-gray-500 text-center">
+                        Se notificará automáticamente a cada encargado
+                    </p>
+                </div>
+            </div>
+
+            <!-- Próxima visita -->
+            <div class="bg-white rounded-xl shadow-sm p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase tracking-wider font-medium">Próxima visita</p>
+                        <p class="font-medium mt-1 text-lg">30/10/25</p>
+                        <p class="text-xs text-gray-500 mt-0.5">10:00 hrs</p>
+                        <p class="text-xs text-gray-600 mt-1">📋 Verificación de instalaciones eléctricas</p>
+                    </div>
+                    <button onclick="editVisit('2025-10-30')" class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 smooth-transition active-scale btn-touch">
+                        Editar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vista de Pendientes -->
+    <div id="pendientes-view" class="view hidden">
+        <div class="p-4">
+            <div class="bg-white rounded-xl shadow-sm p-4">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="font-semibold text-lg">Pendientes por área</h2>
+                    <button class="text-sm text-traza-blue font-medium hover:underline">+ Agregar</button>
+                </div>
+
+                <div class="space-y-2">
+                    <!-- Sala de estar -->
+                    <button
+                        onclick="toggleArea('sala-estar')"
+                        class="w-full text-left bg-gray-50 border rounded-lg p-3 flex items-center justify-between hover:bg-gray-100 transition-colors active:bg-gray-200"
+                    >
+                        <div class="flex items-center gap-3">
+                            <svg id="arrow-area-sala-estar" class="w-4 h-4 smooth-transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                            <span class="font-medium">Sala de estar</span>
+                            <span id="count-sala-estar" class="text-xs bg-gray-200 px-2 py-0.5 rounded-full">3</span>
+                        </div>
+                    </button>
+
+                    <div id="area-sala-estar" class="area-collapsed pl-4 pr-2 py-2">
+                        <div class="space-y-2">
+                            <!-- Tarea 1 - With Swipe Actions -->
+                            <div class="swipe-container rounded-lg" style="position: relative;">
+                                <div id="swipe-hint" class="swipe-hint">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                                    </svg>
+                                    Desliza
+                                </div>
+                                <div class="swipe-actions">
+                                    <div class="swipe-action bg-traza-green" onclick="changeTaskStatus('pausa-tarea-1'); showToast('Tarea marcada como En Obra');">
+                                        <div class="text-center">
+                                            <svg class="w-5 h-5 mx-auto mb-1" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                            </svg>
+                                            <span class="text-[10px]">Completar</span>
+                                        </div>
+                                    </div>
+                                    <div class="swipe-action bg-traza-red" onclick="openTaskOptions('Pintar muro verde')">
+                                        <div class="text-center">
+                                            <svg class="w-5 h-5 mx-auto mb-1" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path>
+                                            </svg>
+                                            <span class="text-[10px]">Opciones</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div
+                                    id="swipe-tarea-1"
+                                    class="swipe-content p-3 bg-white border rounded-lg"
+                                    ontouchstart="handleSwipeStart(event, this)"
+                                    ontouchmove="handleSwipeMove(event, this)"
+                                    ontouchend="handleSwipeEnd(event, this)"
+                                >
+                                    <div class="flex items-start gap-3 mb-2">
+                                        <div id="status-tarea-1" class="status-indicator bg-traza-red mt-1 flex-shrink-0"></div>
+                                        <div class="flex-1">
+                                            <p class="font-medium text-sm mb-1">Pintar muro verde</p>
+                                            <p class="text-xs text-gray-600">Constructor - Juan Pérez</p>
+                                        </div>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mb-3 pl-7">Verificar medidas antes de empezar</p>
+                                    <div class="flex gap-2">
+                                        <button onclick="editTask('Pintar muro verde')" class="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200 active-scale">
+                                            Editar
+                                        </button>
+                                        <a href="https://wa.me/56912345678?text=Hola%20Juan,%20te%20escribo%20sobre%20la%20tarea:%20Pintar%20muro%20verde" class="flex-1 py-2 bg-green-500 text-white rounded-lg text-xs font-medium hover:bg-green-600 active-scale text-center flex items-center justify-center gap-1">
+                                            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.149-.67.149-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+                                            </svg>
+                                            WhatsApp
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tarea 2 -->
+                            <div class="p-3 bg-white border rounded-lg">
+                                <div class="flex items-start gap-3 mb-2">
+                                    <div class="status-indicator bg-traza-yellow mt-1 flex-shrink-0"></div>
+                                    <div class="flex-1">
+                                        <p class="font-medium text-sm mb-1">Perfil metálico ventanal</p>
+                                        <p class="text-xs text-gray-600">Constructor - Juan Pérez</p>
+                                    </div>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button class="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200">
+                                        Editar
+                                    </button>
+                                    <a href="https://wa.me/56912345678" class="flex-1 py-2 bg-green-500 text-white rounded-lg text-xs font-medium hover:bg-green-600 text-center flex items-center justify-center gap-1">
+                                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.149-.67.149-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+                                        </svg>
+                                        WhatsApp
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Tarea 3 -->
+                            <div class="p-3 bg-white border rounded-lg">
+                                <div class="flex items-start gap-3 mb-2">
+                                    <div class="status-indicator bg-traza-green mt-1 flex-shrink-0"></div>
+                                    <div class="flex-1">
+                                        <p class="font-medium text-sm mb-1">Instalación eléctrica apliqué</p>
+                                        <p class="text-xs text-gray-600">Lighting designer - Roberto Muñoz</p>
+                                    </div>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button class="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200">
+                                        Ver detalle
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cocina -->
+                    <button
+                        onclick="toggleArea('cocina-pend')"
+                        class="w-full text-left bg-gray-50 border rounded-lg p-3 flex items-center justify-between hover:bg-gray-100 transition-colors"
+                    >
+                        <div class="flex items-center gap-3">
+                            <svg id="arrow-area-cocina-pend" class="w-4 h-4 smooth-transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                            <span class="font-medium">Cocina</span>
+                            <span id="count-cocina" class="text-xs bg-gray-200 px-2 py-0.5 rounded-full">1</span>
+                        </div>
+                    </button>
+                    <div id="area-cocina-pend" class="area-collapsed pl-4">
+                        <div class="p-3 bg-white border rounded-lg">
+                            <div class="flex items-start gap-3 mb-2">
+                                <div class="status-indicator bg-traza-yellow mt-1 flex-shrink-0"></div>
+                                <div class="flex-1">
+                                    <p class="font-medium text-sm mb-1">Cambiar grifería</p>
+                                    <p class="text-xs text-gray-600">Constructor - Juan Pérez</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hall entrada -->
+                    <button
+                        onclick="toggleArea('hall-entrada-pend')"
+                        class="w-full text-left bg-gray-50 border rounded-lg p-3 flex items-center justify-between hover:bg-gray-100 transition-colors"
+                    >
+                        <div class="flex items-center gap-3">
+                            <svg id="arrow-area-hall-entrada-pend" class="w-4 h-4 smooth-transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                            <span class="font-medium">Hall entrada</span>
+                            <span id="count-hall-entrada" class="text-xs bg-gray-200 px-2 py-0.5 rounded-full">0</span>
+                        </div>
+                    </button>
+                    <div id="area-hall-entrada-pend" class="area-collapsed pl-4"></div>
+
+                    <!-- Terraza -->
+                    <button
+                        onclick="toggleArea('terraza-pend')"
+                        class="w-full text-left bg-gray-50 border rounded-lg p-3 flex items-center justify-between hover:bg-gray-100 transition-colors"
+                    >
+                        <div class="flex items-center gap-3">
+                            <svg id="arrow-area-terraza-pend" class="w-4 h-4 smooth-transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                            <span class="font-medium">Terraza</span>
+                            <span id="count-terraza" class="text-xs bg-gray-200 px-2 py-0.5 rounded-full">0</span>
+                        </div>
+                    </button>
+                    <div id="area-terraza-pend" class="area-collapsed pl-4"></div>
+
+                    <!-- Baño (initially hidden, will show when tasks added) -->
+                    <div id="area-baño-container" style="display: none;">
+                        <button
+                            onclick="toggleArea('baño-pend')"
+                            class="w-full text-left bg-gray-50 border rounded-lg p-3 flex items-center justify-between hover:bg-gray-100 transition-colors"
+                        >
+                            <div class="flex items-center gap-3">
+                                <svg id="arrow-area-baño-pend" class="w-4 h-4 smooth-transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                                <span class="font-medium">Baño</span>
+                                <span id="count-baño" class="text-xs bg-gray-200 px-2 py-0.5 rounded-full">0</span>
+                            </div>
+                        </button>
+                        <div id="area-baño-pend" class="area-collapsed pl-4"></div>
+                    </div>
+                </div>
+
+                <!-- Estados -->
+                <div class="flex gap-4 mt-5 text-xs border-t pt-4">
+                    <div class="flex items-center gap-2">
+                        <div class="status-indicator bg-traza-red"></div>
+                        <span class="text-gray-600">Pausa</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="status-indicator bg-traza-yellow"></div>
+                        <span class="text-gray-600">En obra</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="status-indicator bg-traza-green"></div>
+                        <span class="text-gray-600">Terminado</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vista de Presupuesto -->
+    <div id="presupuesto-view" class="view hidden">
+        <div class="p-4 space-y-4">
+            <!-- Resumen general -->
+            <div class="bg-white rounded-xl shadow-sm p-4">
+                <h2 class="font-semibold text-lg mb-4">Presupuesto y Gastos</h2>
+                
+                <div class="bg-gradient-to-br from-traza-blue to-blue-600 rounded-xl p-4 text-white mb-4">
+                    <p class="text-xs opacity-90 mb-1 uppercase tracking-wider">Presupuesto Total</p>
+                    <p class="text-3xl font-bold mb-4">$30.000.000</p>
+                    
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between items-center">
+                            <span class="opacity-90">Gastado</span>
+                            <span class="font-semibold">$18.500.000</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="opacity-90">Disponible</span>
+                            <span class="font-semibold">$11.500.000</span>
+                        </div>
+                    </div>
+
+                    <!-- Barra de progreso -->
+                    <div class="mt-4">
+                        <div class="w-full bg-white bg-opacity-30 rounded-full h-2">
+                            <div class="bg-white h-2 rounded-full" style="width: 62%"></div>
+                        </div>
+                        <p class="text-xs mt-2 opacity-90">62% ejecutado</p>
+                    </div>
+                </div>
+
+                <!-- Desglose por categoría -->
+                <div class="space-y-3">
+                    <h3 class="font-medium text-sm text-gray-700 uppercase tracking-wider">Desglose por categoría</h3>
+                    
+                    <div class="p-3 border rounded-lg">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-sm font-medium">Diseño y Arquitectura</span>
+                            <span class="text-sm font-semibold">$3.500.000</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-1.5">
+                            <div class="bg-traza-blue h-1.5 rounded-full" style="width: 100%"></div>
+                        </div>
+                    </div>
+
+                    <div class="p-3 border rounded-lg">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-sm font-medium">Constructor</span>
+                            <span class="text-sm font-semibold">$12.000.000</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-1.5">
+                            <div class="bg-traza-yellow h-1.5 rounded-full" style="width: 85%"></div>
+                        </div>
+                    </div>
+
+                    <div class="p-3 border rounded-lg">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-sm font-medium">Materiales</span>
+                            <span class="text-sm font-semibold">$8.000.000</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-1.5">
+                            <div class="bg-traza-green h-1.5 rounded-full" style="width: 65%"></div>
+                        </div>
+                    </div>
+
+                    <div class="p-3 border rounded-lg">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-sm font-medium">Mobiliario</span>
+                            <span class="text-sm font-semibold">$4.500.000</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-1.5">
+                            <div class="bg-gray-400 h-1.5 rounded-full" style="width: 20%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Planillas de seguimiento -->
+            <div class="bg-white rounded-xl shadow-sm p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-medium">Planillas de seguimiento</h3>
+                    <button class="text-xs text-traza-blue font-medium hover:underline">+ Agregar</button>
+                </div>
+                <div class="space-y-2">
+                    <a href="#" class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors active:bg-gray-100">
+                        <div class="flex items-center gap-3">
+                            <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                            </svg>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium">Materiales.xlsx</p>
+                                <p class="text-xs text-gray-500">Actualizado: 26/10/25</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">Notifica cambios</span>
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                            </svg>
+                        </div>
+                    </a>
+
+                    <a href="#" class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors active-scale">
+                        <div class="flex items-center gap-3">
+                            <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                            </svg>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium">Paisajismo.xlsx</p>
+                                <p class="text-xs text-gray-500">Actualizado: 20/10/25</p>
+                            </div>
+                        </div>
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                        </svg>
+                    </a>
+
+                    <a href="#" class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors active-scale">
+                        <div class="flex items-center gap-3">
+                            <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                            </svg>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium">Iluminación.xlsx</p>
+                                <p class="text-xs text-gray-500">Actualizado: 15/10/25</p>
+                            </div>
+                        </div>
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                        </svg>
+                    </a>
+                </div>
+
+                <p class="text-xs text-gray-500 mt-3 p-2 bg-blue-50 rounded border-l-2 border-traza-blue">
+                    Cada actualización en las planillas genera una notificación automática al equipo
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vista de Equipo -->
+    <div id="equipo-view" class="view hidden">
+        <div class="p-4">
+            <div class="bg-white rounded-xl shadow-sm p-4">
+                <h2 class="font-semibold text-lg mb-4">Equipo del Proyecto</h2>
+
+                <div class="space-y-4">
+                    <!-- Arquitectura -->
+                    <div>
+                        <h3 class="text-xs text-gray-500 uppercase tracking-wider mb-2 font-medium">Arquitectura</h3>
+                        <div class="space-y-2">
+                            <div class="border rounded-lg p-3">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex-1">
+                                        <p class="font-medium text-sm">Felipe Larraín</p>
+                                        <p class="text-xs text-gray-600">Arquitecto Principal</p>
+                                        <p class="text-xs text-gray-500 mt-0.5">felipe@arquitectura.cl</p>
+                                    </div>
+                                    <a href="https://wa.me/56912345678" class="bg-green-500 text-white p-2.5 rounded-full hover:bg-green-600 transition-colors active:bg-green-700">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.149-.67.149-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+                                        </svg>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Construcción -->
+                    <div>
+                        <h3 class="text-xs text-gray-500 uppercase tracking-wider mb-2 font-medium">Construcción</h3>
+                        <div class="border rounded-lg p-3">
+                            <div class="flex items-center justify-between">
+                                <div class="flex-1">
+                                    <p class="font-medium text-sm">Juan Pérez</p>
+                                    <p class="text-xs text-gray-600">Constructor Principal</p>
+                                    <p class="text-xs text-gray-500 mt-0.5">juan@constructor.cl</p>
+                                    <span class="inline-block mt-2 bg-traza-red text-white text-xs px-2 py-0.5 rounded-full font-medium">4 pendientes activos</span>
+                                </div>
+                                <a href="https://wa.me/56912345678" class="bg-green-500 text-white p-2.5 rounded-full hover:bg-green-600 transition-colors active:bg-green-700">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.149-.67.149-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+                                    </svg>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Especialistas -->
+                    <div>
+                        <h3 class="text-xs text-gray-500 uppercase tracking-wider mb-2 font-medium">Especialistas</h3>
+                        <div class="space-y-2">
+                            <div class="border rounded-lg p-3">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex-1">
+                                        <p class="font-medium text-sm">Andrea Silva</p>
+                                        <p class="text-xs text-gray-600">Paisajista</p>
+                                        <p class="text-xs text-gray-500 mt-0.5">andrea@paisajismo.cl</p>
+                                    </div>
+                                    <a href="https://wa.me/56912345678" class="bg-green-500 text-white p-2.5 rounded-full hover:bg-green-600 transition-colors">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.149-.67.149-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+                                        </svg>
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="border rounded-lg p-3">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex-1">
+                                        <p class="font-medium text-sm">Roberto Muñoz</p>
+                                        <p class="text-xs text-gray-600">Lighting Designer</p>
+                                        <p class="text-xs text-gray-500 mt-0.5">roberto@lighting.cl</p>
+                                        <span class="inline-block mt-2 bg-traza-red text-white text-xs px-2 py-0.5 rounded-full font-medium">1 pendiente activo</span>
+                                    </div>
+                                    <a href="https://wa.me/56912345678" class="bg-green-500 text-white p-2.5 rounded-full hover:bg-green-600 transition-colors">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.149-.67.149-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+                                        </svg>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vista de Documentos -->
+    <div id="documentos-view" class="view hidden">
+        <div class="p-4 space-y-4">
+            <div class="bg-white rounded-xl shadow-sm p-4">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="font-semibold text-lg">Documentos</h2>
+                    <button class="text-sm text-traza-blue font-medium hover:underline">+ Subir</button>
+                </div>
+
+                <div class="space-y-4">
+                    <!-- Planos -->
+                    <div>
+                        <h3 class="text-xs text-gray-500 uppercase tracking-wider mb-2 font-medium">Planos</h3>
+                        <div class="space-y-2">
+                            <a href="#" class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors active:bg-gray-100">
+                                <div class="flex items-center gap-3">
+                                    <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                                    </svg>
+                                    <div>
+                                        <p class="text-sm font-medium">Planta_General_v3.pdf</p>
+                                        <p class="text-xs text-gray-500">Actualizado: 25/10/25</p>
+                                    </div>
+                                </div>
+                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                </svg>
+                            </a>
+                            <a href="#" class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors active-scale">
+                                <div class="flex items-center gap-3">
+                                    <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                                    </svg>
+                                    <div>
+                                        <p class="text-sm font-medium">Cortes_Elevaciones.pdf</p>
+                                        <p class="text-xs text-gray-500">Actualizado: 18/10/25</p>
+                                    </div>
+                                </div>
+                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Permisos -->
+                    <div>
+                        <h3 class="text-xs text-gray-500 uppercase tracking-wider mb-2 font-medium">Permisos</h3>
+                        <div class="space-y-2">
+                            <a href="#" class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+                                <div class="flex items-center gap-3 flex-1">
+                                    <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M9 10A3.04 3.04 0 0 1 12 7a3.04 3.04 0 0 1 3 3 3.04 3.04 0 0 1-3 3 3.04 3.04 0 0 1-3-3m3 9l4-1.5v-3.5A5.04 5.04 0 0 0 12 9a5.04 5.04 0 0 0-4 5v3.5l4 1.5M12 4l1 2-1 1-1-1 1-2z"/>
+                                    </svg>
+                                    <div>
+                                        <p class="text-sm font-medium">Permiso_Edificacion.pdf</p>
+                                        <p class="text-xs text-gray-500">Aprobado: 15/08/25</p>
+                                    </div>
+                                </div>
+                                <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-medium">Vigente</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Antepproyecto -->
+                    <div>
+                        <h3 class="text-xs text-gray-500 uppercase tracking-wider mb-2 font-medium">Anteproyecto</h3>
+                        <div class="space-y-2">
+                            <a href="#" class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+                                <div class="flex items-center gap-3">
+                                    <svg class="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                                    </svg>
+                                    <div>
+                                        <p class="text-sm font-medium">Anteproyecto_Final.pdf</p>
+                                        <p class="text-xs text-gray-500">20/05/25</p>
+                                    </div>
+                                </div>
+                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="w-full mt-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-gray-400 hover:bg-gray-50 transition-colors text-sm font-medium active:bg-gray-100">
+                    + Subir nuevo documento
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vista de Permisos -->
+    <div id="permisos-view" class="view hidden">
+        <div class="p-4">
+            <div class="bg-white rounded-xl shadow-sm p-4">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="font-semibold text-lg">Permisos Municipales</h2>
+                    <button class="text-sm text-traza-blue font-medium hover:underline">+ Agregar</button>
+                </div>
+                <div class="space-y-2">
+                    <div class="p-3 border rounded-lg">
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="font-medium text-sm">Permiso de Edificación</p>
+                            <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-medium">Aprobado</span>
+                        </div>
+                        <p class="text-xs text-gray-500">Fecha aprobación: 15/08/25</p>
+                        <p class="text-xs text-gray-500">Vigencia: 24 meses (hasta 08/27)</p>
+                    </div>
+                    <div class="p-3 border rounded-lg">
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="font-medium text-sm">Permiso Municipal</p>
+                            <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-medium">Aprobado</span>
+                        </div>
+                        <p class="text-xs text-gray-500">Fecha aprobación: 02/10/25</p>
+                        <p class="text-xs text-gray-500">Vigencia: 12 meses</p>
+                    </div>
+                    <div class="p-3 border rounded-lg">
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="font-medium text-sm">Recepción de Obra</p>
+                            <span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded font-medium">En trámite</span>
+                        </div>
+                        <p class="text-xs text-gray-500">Solicitud: 20/10/25</p>
+                        <p class="text-xs text-gray-500">Estimado: Diciembre 2025</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vista de Notas -->
+    <div id="notas-view" class="view hidden">
+        <div class="p-4 space-y-4">
+            <div class="bg-white rounded-xl shadow-sm p-4">
+                <h3 class="font-medium mb-3">Nueva nota rápida</h3>
+                <div class="space-y-3">
+                    <select class="mobile-optimized w-full p-3 border rounded-lg text-sm">
+                        <option value="">Área (opcional)</option>
+                        <option>Sala de estar</option>
+                        <option>Cocina</option>
+                        <option>Hall entrada</option>
+                        <option>Comedor</option>
+                        <option>Terraza</option>
+                    </select>
+                    <textarea
+                        class="mobile-optimized w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-traza-blue focus:border-transparent resize-none"
+                        rows="3"
+                        placeholder="Escribe una nota rápida..."
+                    ></textarea>
+                    <button class="w-full py-2.5 bg-traza-blue text-white rounded-lg font-medium hover:bg-blue-600 smooth-transition active:bg-blue-700">
+                        Guardar Nota
+                    </button>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <h3 class="font-medium text-sm text-gray-700 px-1">Notas recientes</h3>
+
+                <div class="bg-white rounded-xl shadow-sm p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs text-gray-500">27/10/25 - 14:30</span>
+                        <span class="text-xs bg-gray-100 px-2 py-1 rounded">Hall entrada</span>
+                    </div>
+                    <p class="text-sm text-gray-700 mb-2">Revisar iluminación del acceso principal. Cliente quiere algo más cálido.</p>
+                    <button onclick="convertNotaToPendiente('Revisar iluminación del acceso principal')" class="text-xs text-traza-blue font-medium hover:underline active-scale">→ Convertir en pendiente</button>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs text-gray-500">25/10/25 - 11:15</span>
+                        <span class="text-xs bg-gray-100 px-2 py-1 rounded">Cocina</span>
+                    </div>
+                    <p class="text-sm text-gray-700 mb-2">Cambiar grifería por modelo acordado con cliente (marca Kohler, ref: K-99259).</p>
+                    <button onclick="convertNotaToPendiente('Cambiar grifería por modelo acordado con cliente')" class="text-xs text-traza-blue font-medium hover:underline active-scale">→ Convertir en pendiente</button>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs text-gray-500">22/10/25 - 16:45</span>
+                    </div>
+                    <p class="text-sm text-gray-700">Recordar coordinar con paisajista para la terraza. Fechas críticas: antes del 05/11.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vista de Notificaciones -->
+    <div id="notificaciones-view" class="view hidden">
+        <div class="p-4">
+            <div class="bg-white rounded-xl shadow-sm p-4">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="font-semibold text-lg">Notificaciones</h2>
+                    <button class="text-xs text-traza-blue font-medium hover:underline">Marcar todas como leídas</button>
+                </div>
+                <div class="space-y-2">
+                    <div class="p-3 bg-red-50 border-l-4 border-traza-red rounded">
+                        <div class="flex items-start gap-2">
+                            <div class="w-2 h-2 bg-traza-red rounded-full mt-1.5 flex-shrink-0"></div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium">Nueva tarea asignada</p>
+                                <p class="text-xs text-gray-600 mt-1">Juan Pérez te asignó "Pintar muro verde" en Sala de estar</p>
+                                <p class="text-xs text-gray-500 mt-1">Hace 2 horas</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-3 bg-blue-50 border-l-4 border-blue-400 rounded">
+                        <div class="flex items-start gap-2">
+                            <div class="w-2 h-2 bg-blue-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium">Visita programada</p>
+                                <p class="text-xs text-gray-600 mt-1">Próxima visita programada para el 30/10/25 a las 10:00 hrs</p>
+                                <p class="text-xs text-gray-500 mt-1">Ayer</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-green-50 border-l-4 border-traza-green rounded">
+                        <div class="flex items-start gap-2">
+                            <div class="w-2 h-2 bg-traza-green rounded-full mt-1.5 flex-shrink-0"></div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium">Tarea completada</p>
+                                <p class="text-xs text-gray-600 mt-1">Roberto Muñoz completó "Instalación eléctrica apliqué"</p>
+                                <p class="text-xs text-gray-500 mt-1">Hace 5 días</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-yellow-50 border-l-4 border-traza-yellow rounded">
+                        <div class="flex items-start gap-2">
+                            <div class="w-2 h-2 bg-traza-yellow rounded-full mt-1.5 flex-shrink-0"></div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium">Actualización de presupuesto</p>
+                                <p class="text-xs text-gray-600 mt-1">Se actualizó la planilla "Materiales.xlsx"</p>
+                                <p class="text-xs text-gray-500 mt-1">Hace 1 día</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Backdrop -->
+    <div id="backdrop" class="backdrop" onclick="closeBottomSheet()"></div>
+
+    <!-- Bottom Sheet for actions -->
+    <div id="bottomSheet" class="bottom-sheet">
+        <div class="bottom-sheet-handle"></div>
+        <div id="bottomSheetContent" class="p-4">
+            <!-- Content will be dynamically inserted -->
+        </div>
+    </div>
+
+    <!-- Bottom Navigation (Mobile) -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t md:hidden z-30 shadow-lg">
+        <div class="grid grid-cols-4 gap-1">
+            <button onclick="showView('visitas')" class="py-3 text-center hover:bg-gray-50 transition-colors active:bg-gray-100 flex flex-col items-center justify-center gap-1">
+                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+                <span class="text-[10px] font-medium">Visitas</span>
+            </button>
+            <button onclick="showView('pendientes')" class="py-3 text-center hover:bg-gray-50 transition-colors relative flex flex-col items-center justify-center gap-1">
+                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                </svg>
+                <span class="text-[10px] font-medium">Pendientes</span>
+                <span class="absolute top-2 right-6 bg-traza-red text-white w-4 h-4 rounded-full text-[9px] flex items-center justify-center font-bold">4</span>
+            </button>
+            <button onclick="showView('equipo')" class="py-3 text-center hover:bg-gray-50 transition-colors flex flex-col items-center justify-center gap-1">
+                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+                <span class="text-[10px] font-medium">Equipo</span>
+            </button>
+            <button onclick="showView('documentos')" class="py-3 text-center hover:bg-gray-50 transition-colors flex flex-col items-center justify-center gap-1">
+                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                </svg>
+                <span class="text-[10px] font-medium">Docs</span>
+            </button>
+        </div>
+    </nav>
+
+    <script>
+        // ========== Global State ==========
+
+        let currentDate = new Date(2025, 9, 27); // October 27, 2025
+        const today = new Date(2025, 9, 27); // October 27, 2025
+
+        // Pendientes State
+        let pendientesData = {
+            'sala-estar': [
+                {
+                    id: 'tarea-1',
+                    nombre: 'Pintar muro verde',
+                    encargado: 'Juan Pérez',
+                    rol: 'Constructor',
+                    estado: 'pausa',
+                    notas: 'Verificar medidas antes de empezar',
+                    origen: null
+                },
+                {
+                    id: 'tarea-2',
+                    nombre: 'Perfil metálico ventanal',
+                    encargado: 'Juan Pérez',
+                    rol: 'Constructor',
+                    estado: 'en_obra',
+                    notas: '',
+                    origen: null
+                },
+                {
+                    id: 'tarea-3',
+                    nombre: 'Instalación eléctrica apliqué',
+                    encargado: 'Roberto Muñoz',
+                    rol: 'Lighting designer',
+                    estado: 'terminado',
+                    notas: '',
+                    origen: null
+                }
+            ],
+            'cocina': [
+                {
+                    id: 'tarea-4',
+                    nombre: 'Cambiar grifería',
+                    encargado: 'Juan Pérez',
+                    rol: 'Constructor',
+                    estado: 'en_obra',
+                    notas: '',
+                    origen: null
+                }
+            ],
+            'hall-entrada': [],
+            'terraza': []
+        };
+
+        let pendientesCounter = 4;
+
+        // Notas State
+        let notasData = [
+            {
+                id: 'nota-1',
+                fecha: '27/10/25 - 14:30',
+                area: 'Hall entrada',
+                contenido: 'Revisar iluminación del acceso principal. Cliente quiere algo más cálido.',
+                convertida: false
+            },
+            {
+                id: 'nota-2',
+                fecha: '25/10/25 - 11:15',
+                area: 'Cocina',
+                contenido: 'Cambiar grifería por modelo acordado con cliente (marca Kohler, ref: K-99259).',
+                convertida: false
+            },
+            {
+                id: 'nota-3',
+                fecha: '22/10/25 - 16:45',
+                area: null,
+                contenido: 'Recordar coordinar con paisajista para la terraza. Fechas críticas: antes del 05/11.',
+                convertida: false
+            }
+        ];
+
+        // ========== Calendar State and Data ==========
+
+        // Mock visit data
+        const visits = {
+            // October 2025 - Completed visits
+            '2025-10-01': { status: 'completed', notes: 'Revisión general del avance. Todo en orden.', time: '10:00' },
+            '2025-10-08': { status: 'completed', notes: 'Inspección de trabajos de construcción.', time: '14:00' },
+            '2025-10-15': { status: 'completed', notes: 'Reunión con especialistas de iluminación.', time: '11:30' },
+            '2025-10-22': { status: 'completed', notes: 'Revisión de avances en cocina y baño.', time: '09:00' },
+
+            // October 27 - Today's visit
+            '2025-10-27': { status: 'today', notes: 'Visita en curso - Revisión general de pendientes' },
+
+            // October - Upcoming visits
+            '2025-10-30': { status: 'scheduled', notes: 'Verificación de instalaciones eléctricas', time: '10:00' },
+
+            // November 2025 - Scheduled visits
+            '2025-11-05': { status: 'scheduled', notes: 'Reunión con paisajista para terraza', time: '11:00' },
+            '2025-11-12': { status: 'scheduled', notes: 'Inspección de avances de obra', time: '10:30' },
+            '2025-11-18': { status: 'scheduled', notes: 'Revisión final con cliente', time: '15:00' },
+            '2025-11-25': { status: 'scheduled', notes: 'Coordinación de últimos detalles', time: '14:00' },
+        };
+
+        const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                           'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+        // ========== Calendar Functions ==========
+
+        function renderCalendar() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+
+            // Update month title
+            document.getElementById('calendarMonth').textContent = `${monthNames[month]} ${year}`;
+
+            // Get first day of month and total days
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            // Adjust for Monday start (0 = Monday, 6 = Sunday)
+            const adjustedFirstDay = firstDay === 0 ? 6 : firstDay - 1;
+
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+
+            // Add empty cells for days before month starts
+            for (let i = 0; i < adjustedFirstDay; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'calendar-day';
+                grid.appendChild(emptyCell);
+            }
+
+            // Add days of the month
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const visit = visits[dateStr];
+                const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+
+                const dayCell = document.createElement('div');
+                dayCell.className = 'calendar-day p-2 text-center text-sm relative cursor-pointer active-scale btn-touch';
+                dayCell.dataset.date = dateStr;
+                dayCell.onclick = () => handleDayClick(dateStr, day, visit);
+
+                // Style based on visit status
+                if (visit) {
+                    if (visit.status === 'completed') {
+                        dayCell.className += ' border rounded-lg hover:bg-gray-50';
+                        dayCell.innerHTML = `
+                            ${day}
+                            <div class="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-traza-green rounded-full"></div>
+                        `;
+                    } else if (visit.status === 'today') {
+                        dayCell.className += ' bg-traza-red text-white rounded-lg font-medium';
+                        dayCell.innerHTML = `
+                            ${day}
+                            <div class="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-white rounded-full pulse"></div>
+                        `;
+                    } else if (visit.status === 'scheduled') {
+                        dayCell.className += ' bg-traza-yellow rounded-lg font-medium';
+                        dayCell.innerHTML = `
+                            ${day}
+                            <div class="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-traza-dark rounded-full"></div>
+                        `;
+                    }
+                } else if (isToday) {
+                    dayCell.className += ' border-2 border-traza-blue rounded-lg font-semibold text-traza-blue';
+                    dayCell.textContent = day;
+                } else {
+                    dayCell.className += ' border rounded-lg hover:bg-gray-50';
+                    dayCell.textContent = day;
+                }
+
+                grid.appendChild(dayCell);
+            }
+        }
+
+        function handleDayClick(dateStr, day, visit) {
+            if (visit) {
+                showVisitPreview(dateStr, day, visit);
+            } else {
+                showQuickAddVisit(dateStr, day);
+            }
+        }
+
+        function showVisitPreview(dateStr, day, visit) {
+            const monthName = monthNames[currentDate.getMonth()];
+            const statusText = {
+                'completed': 'Completada',
+                'today': 'En curso',
+                'scheduled': 'Programada'
+            };
+
+            const statusColor = {
+                'completed': 'bg-green-100 text-green-700',
+                'today': 'bg-red-100 text-red-700',
+                'scheduled': 'bg-yellow-100 text-yellow-700'
+            };
+
+            const content = `
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-semibold text-lg">Visita ${day} ${monthName}</h3>
+                        <span class="text-xs px-2 py-1 rounded font-medium ${statusColor[visit.status]}">${statusText[visit.status]}</span>
+                    </div>
+                    ${visit.time ? `<p class="text-sm text-gray-600">🕐 ${visit.time} hrs</p>` : ''}
+                    <p class="text-sm text-gray-700">${visit.notes}</p>
+                    <div class="flex gap-2">
+                        ${visit.status !== 'completed' ? `
+                            <button onclick="editVisit('${dateStr}')" class="flex-1 py-2.5 bg-traza-blue text-white rounded-lg font-medium active-scale">
+                                Editar Visita
+                            </button>
+                        ` : ''}
+                        <button onclick="viewVisitDetails('${dateStr}')" class="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium active-scale">
+                            Ver Detalle
+                        </button>
+                    </div>
+                    <button onclick="closeBottomSheet()" class="w-full py-2 text-gray-600 font-medium">
+                        Cerrar
+                    </button>
+                </div>
+            `;
+            openBottomSheet(content);
+        }
+
+        function showQuickAddVisit(dateStr, day) {
+            const monthName = monthNames[currentDate.getMonth()];
+            const content = `
+                <h3 class="font-semibold text-lg mb-4">Programar Visita</h3>
+                <p class="text-sm text-gray-600 mb-4">📅 ${day} de ${monthName} ${currentDate.getFullYear()}</p>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-xs text-gray-500 uppercase tracking-wider block mb-2">Hora</label>
+                        <input type="time" class="mobile-optimized w-full p-3 border rounded-lg" value="10:00" />
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500 uppercase tracking-wider block mb-2">Notas (opcional)</label>
+                        <textarea class="mobile-optimized w-full p-3 border rounded-lg resize-none" rows="3" placeholder="Agregar detalles de la visita..."></textarea>
+                    </div>
+                    <button onclick="createVisit('${dateStr}')" class="w-full py-3 bg-traza-blue text-white rounded-lg font-medium active-scale">
+                        Crear Visita
+                    </button>
+                    <button onclick="closeBottomSheet()" class="w-full py-2 text-gray-600 font-medium">
+                        Cancelar
+                    </button>
+                </div>
+            `;
+            openBottomSheet(content);
+        }
+
+        function createVisit(dateStr) {
+            visits[dateStr] = {
+                status: 'scheduled',
+                notes: 'Visita programada',
+                time: '10:00'
+            };
+            renderCalendar();
+            closeBottomSheet();
+            showToast('✓ Visita creada', 2000);
+        }
+
+        function editVisit(dateStr) {
+            closeBottomSheet();
+            showToast('Función de edición próximamente', 2000);
+        }
+
+        function viewVisitDetails(dateStr) {
+            closeBottomSheet();
+            showToast('Mostrando detalles de visita', 2000);
+        }
+
+        function previousMonth() {
+            const grid = document.getElementById('calendarGrid');
+            grid.classList.add('fade');
+            setTimeout(() => {
+                currentDate.setMonth(currentDate.getMonth() - 1);
+                renderCalendar();
+                grid.classList.remove('fade');
+            }, 150);
+        }
+
+        function nextMonth() {
+            const grid = document.getElementById('calendarGrid');
+            grid.classList.add('fade');
+            setTimeout(() => {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+                renderCalendar();
+                grid.classList.remove('fade');
+            }, 150);
+        }
+
+        function goToToday() {
+            const grid = document.getElementById('calendarGrid');
+            grid.classList.add('fade');
+            setTimeout(() => {
+                currentDate = new Date();
+                renderCalendar();
+                grid.classList.remove('fade');
+                showToast('📅 Mes actual', 1500);
+            }, 150);
+        }
+
+        // ========== Calendar Swipe Navigation ==========
+
+        let calendarSwipeStartX = 0;
+        let calendarSwipeEndX = 0;
+
+        function handleCalendarSwipeStart(e) {
+            calendarSwipeStartX = e.changedTouches[0].screenX;
+        }
+
+        function handleCalendarSwipeMove(e) {
+            calendarSwipeEndX = e.changedTouches[0].screenX;
+        }
+
+        function handleCalendarSwipeEnd(e) {
+            const diff = calendarSwipeStartX - calendarSwipeEndX;
+
+            // Swipe left - next month
+            if (diff > 50) {
+                nextMonth();
+            }
+            // Swipe right - previous month
+            else if (diff < -50) {
+                previousMonth();
+            }
+        }
+
+        // ========== Mobile UX Functions ==========
+
+        // Toast notification
+        function showToast(message, duration = 3000) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, duration);
+        }
+
+        // Ripple effect
+        function createRipple(event) {
+            const button = event.currentTarget;
+            const ripple = document.createElement('span');
+            const rect = button.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = event.clientX - rect.left - size / 2;
+            const y = event.clientY - rect.top - size / 2;
+
+            ripple.style.width = ripple.style.height = size + 'px';
+            ripple.style.left = x + 'px';
+            ripple.style.top = y + 'px';
+            ripple.classList.add('ripple');
+
+            button.appendChild(ripple);
+
+            setTimeout(() => ripple.remove(), 600);
+        }
+
+        // Add ripple to all buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('button, .btn-touch').forEach(button => {
+                if (!button.dataset.noRipple) {
+                    button.addEventListener('click', createRipple);
+                }
+            });
+        });
+
+        // Bottom Sheet
+        function openBottomSheet(content) {
+            const sheet = document.getElementById('bottomSheet');
+            const backdrop = document.getElementById('backdrop');
+            const contentDiv = document.getElementById('bottomSheetContent');
+
+            contentDiv.innerHTML = content;
+            sheet.classList.add('active');
+            backdrop.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeBottomSheet() {
+            const sheet = document.getElementById('bottomSheet');
+            const backdrop = document.getElementById('backdrop');
+
+            sheet.classList.remove('active');
+            backdrop.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        // Swipe gesture handler
+        let touchStartX = 0;
+        let touchEndX = 0;
+        let currentSwipedElement = null;
+
+        function handleSwipeStart(e, element) {
+            touchStartX = e.changedTouches[0].screenX;
+            currentSwipedElement = element;
+
+            // Hide swipe hint on first interaction
+            hideSwipeHint();
+        }
+
+        function handleSwipeMove(e, element) {
+            touchEndX = e.changedTouches[0].screenX;
+            const diff = touchStartX - touchEndX;
+
+            if (diff > 0 && diff < 160) {
+                element.style.transform = `translateX(-${diff}px)`;
+            }
+        }
+
+        function handleSwipeEnd(e, element) {
+            const diff = touchStartX - touchEndX;
+
+            if (diff > 80) {
+                element.style.transform = 'translateX(-160px)';
+            } else {
+                element.style.transform = 'translateX(0)';
+            }
+        }
+
+        // Hide swipe hint
+        function hideSwipeHint() {
+            const hint = document.getElementById('swipe-hint');
+            if (hint && !hint.classList.contains('fade-out')) {
+                hint.classList.add('fade-out');
+                localStorage.setItem('swipeHintSeen', 'true');
+            }
+        }
+
+        // Auto-hide swipe hint after 5 seconds
+        setTimeout(() => {
+            if (!localStorage.getItem('swipeHintSeen')) {
+                hideSwipeHint();
+            }
+        }, 5000);
+
+        // Check if hint was already seen
+        document.addEventListener('DOMContentLoaded', function() {
+            if (localStorage.getItem('swipeHintSeen')) {
+                const hint = document.getElementById('swipe-hint');
+                if (hint) {
+                    hint.style.display = 'none';
+                }
+            }
+        });
+
+        // Loading state
+        function showLoading(buttonId) {
+            const button = document.getElementById(buttonId);
+            if (button) {
+                button.disabled = true;
+                button.innerHTML = '<div class="spinner"></div>';
+            }
+        }
+
+        function hideLoading(buttonId, originalText) {
+            const button = document.getElementById(buttonId);
+            if (button) {
+                button.disabled = false;
+                button.innerHTML = originalText;
+            }
+        }
+
+        // ========== Pendientes Management ==========
+
+        function updatePendientesCounter() {
+            let count = 0;
+            Object.values(pendientesData).forEach(area => {
+                count += area.filter(t => t.estado !== 'terminado').length;
+            });
+            pendientesCounter = count;
+
+            // Update all counter badges
+            document.querySelectorAll('.bg-traza-red.text-white').forEach(badge => {
+                if (badge.closest('[onclick*="pendientes"]')) {
+                    badge.textContent = count;
+                }
+            });
+        }
+
+        function renderPendientesArea(areaId, areaNombre, tareas) {
+            const container = document.getElementById(`area-${areaId}`);
+            if (!container) return;
+
+            const activeTareas = tareas.filter(t => t.estado !== 'terminado');
+            if (activeTareas.length === 0) {
+                container.innerHTML = '<p class="text-xs text-gray-500 p-3">No hay pendientes en esta área</p>';
+                return;
+            }
+
+            container.innerHTML = activeTareas.map(tarea => {
+                const statusColor = {
+                    'pausa': 'bg-traza-red',
+                    'en_obra': 'bg-traza-yellow',
+                    'terminado': 'bg-traza-green'
+                }[tarea.estado];
+
+                const origenBadge = tarea.origen ? `
+                    <span class="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                        ${tarea.origen === 'visita' ? '📅 De visita' : '📝 De nota'}
+                    </span>
+                ` : '';
+
+                return `
+                    <div class="swipe-container rounded-lg mb-2">
+                        <div class="swipe-actions">
+                            <div class="swipe-action bg-traza-green" onclick="changeTaskStatus('${tarea.id}'); showToast('Tarea marcada como En Obra');">
+                                <div class="text-center">
+                                    <svg class="w-5 h-5 mx-auto mb-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    <span class="text-[10px]">Completar</span>
+                                </div>
+                            </div>
+                            <div class="swipe-action bg-traza-red" onclick="openTaskOptions('${tarea.nombre}')">
+                                <div class="text-center">
+                                    <svg class="w-5 h-5 mx-auto mb-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path>
+                                    </svg>
+                                    <span class="text-[10px]">Opciones</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div
+                            id="swipe-${tarea.id}"
+                            class="swipe-content p-3 bg-white border rounded-lg"
+                            ontouchstart="handleSwipeStart(event, this)"
+                            ontouchmove="handleSwipeMove(event, this)"
+                            ontouchend="handleSwipeEnd(event, this)"
+                        >
+                            <div class="flex items-start gap-3 mb-2">
+                                <div id="status-${tarea.id}" class="status-indicator ${statusColor} mt-1 flex-shrink-0"></div>
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <p class="font-medium text-sm">${tarea.nombre}</p>
+                                        ${origenBadge}
+                                    </div>
+                                    <p class="text-xs text-gray-600">${tarea.rol} - ${tarea.encargado}</p>
+                                </div>
+                            </div>
+                            ${tarea.notas ? `<p class="text-xs text-gray-500 mb-3 pl-7">${tarea.notas}</p>` : ''}
+                            <div class="flex gap-2">
+                                <button onclick="editTask('${tarea.nombre}')" class="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200 active-scale">
+                                    Editar
+                                </button>
+                                <a href="https://wa.me/56912345678?text=Hola%20${encodeURIComponent(tarea.encargado)},%20te%20escribo%20sobre%20la%20tarea:%20${encodeURIComponent(tarea.nombre)}" class="flex-1 py-2 bg-green-500 text-white rounded-lg text-xs font-medium hover:bg-green-600 active-scale text-center flex items-center justify-center gap-1">
+                                    <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.149-.67.149-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+                                    </svg>
+                                    WhatsApp
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderAllPendientes() {
+            Object.keys(pendientesData).forEach(area => {
+                const areaMap = {
+                    'sala-estar': 'sala-estar',
+                    'cocina': 'cocina-pend',
+                    'hall-entrada': 'hall-entrada-pend',
+                    'terraza': 'terraza-pend',
+                    'baño': 'baño-pend'
+                };
+                const areaId = areaMap[area];
+                const areaNombres = {
+                    'sala-estar': 'Sala de estar',
+                    'cocina': 'Cocina',
+                    'hall-entrada': 'Hall entrada',
+                    'terraza': 'Terraza',
+                    'baño': 'Baño'
+                };
+
+                renderPendientesArea(areaId, areaNombres[area], pendientesData[area]);
+
+                // Update area count badge
+                const count = pendientesData[area].filter(t => t.estado !== 'terminado').length;
+                const countBadge = document.getElementById(`count-${area}`);
+                if (countBadge) {
+                    countBadge.textContent = count;
+                    if (count === 0) {
+                        countBadge.style.display = 'none';
+                    } else {
+                        countBadge.style.display = 'inline-block';
+                    }
+                }
+
+                // Show baño area if it has tasks
+                if (area === 'baño' && count > 0) {
+                    const bañoContainer = document.getElementById('area-baño-container');
+                    if (bañoContainer) {
+                        bañoContainer.style.display = 'block';
+                    }
+                }
+            });
+            updatePendientesCounter();
+        }
+
+        // ========== Action Functions ==========
+
+        // Convert visita to pendientes
+        function convertToPendientes() {
+            const btn = document.getElementById('convertBtn');
+            const originalText = btn.innerHTML;
+
+            // Show loading
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner mx-auto"></div>';
+
+            // Simulate API call
+            setTimeout(() => {
+                // Create pendientes from visita asuntos
+                const nuevasPendientes = [
+                    {
+                        id: 'tarea-' + Date.now() + '-1',
+                        nombre: 'Revisar iluminación sala',
+                        encargado: 'Roberto Muñoz',
+                        rol: 'Lighting designer',
+                        estado: 'pausa',
+                        notas: 'De visita 27/10: Cliente quiere tono más cálido',
+                        origen: 'visita'
+                    },
+                    {
+                        id: 'tarea-' + Date.now() + '-2',
+                        nombre: 'Instalación de cerámicos en baño',
+                        encargado: 'Juan Pérez',
+                        rol: 'Constructor',
+                        estado: 'pausa',
+                        notas: 'De visita 27/10: Verificar nivel antes de instalar',
+                        origen: 'visita'
+                    },
+                    {
+                        id: 'tarea-' + Date.now() + '-3',
+                        nombre: 'Coordinar con paisajista',
+                        encargado: 'Andrea Silva',
+                        rol: 'Paisajista',
+                        estado: 'pausa',
+                        notas: 'De visita 27/10: Terraza - Fechas críticas antes del 05/11',
+                        origen: 'visita'
+                    }
+                ];
+
+                // Add to pendientes data
+                pendientesData['sala-estar'].push(nuevasPendientes[0]);
+                if (!pendientesData['baño']) pendientesData['baño'] = [];
+                pendientesData['baño'] = [nuevasPendientes[1]];
+                pendientesData['terraza'].push(nuevasPendientes[2]);
+
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+
+                // Show success message
+                showToast('✓ 3 pendientes creados y notificados', 4000);
+
+                // Update UI
+                renderAllPendientes();
+
+                // Optional: Navigate to pendientes view after 1.5 seconds
+                setTimeout(() => {
+                    showView('pendientes');
+                    showToast('📋 Nuevos pendientes agregados', 2000);
+                }, 1500);
+            }, 2000);
+        }
+
+        // Change task status
+        function changeTaskStatus(taskId) {
+            // Find the task in pendientesData
+            let foundTask = null;
+            let foundArea = null;
+
+            for (const area in pendientesData) {
+                const task = pendientesData[area].find(t => t.id === taskId);
+                if (task) {
+                    foundTask = task;
+                    foundArea = area;
+                    break;
+                }
+            }
+
+            if (foundTask) {
+                // Cycle through states: pausa -> en_obra -> terminado
+                if (foundTask.estado === 'pausa') {
+                    foundTask.estado = 'en_obra';
+                } else if (foundTask.estado === 'en_obra') {
+                    foundTask.estado = 'terminado';
+                    showToast('✓ Tarea completada', 2000);
+                } else {
+                    foundTask.estado = 'pausa';
+                }
+
+                // Re-render the area
+                renderAllPendientes();
+
+                // Reset swipe position
+                const swipeEl = document.getElementById('swipe-' + taskId);
+                if (swipeEl) {
+                    swipeEl.style.transform = 'translateX(0)';
+                }
+            }
+        }
+
+        // Edit task - opens bottom sheet
+        function editTask(taskName) {
+            const content = `
+                <h3 class="font-semibold text-lg mb-4">Editar Tarea</h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-xs text-gray-500 uppercase tracking-wider block mb-2">Tarea</label>
+                        <input type="text" value="${taskName}" class="mobile-optimized w-full p-3 border rounded-lg" />
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500 uppercase tracking-wider block mb-2">Estado</label>
+                        <select class="mobile-optimized w-full p-3 border rounded-lg">
+                            <option value="pausa">Pausa</option>
+                            <option value="en_obra">En Obra</option>
+                            <option value="terminado">Terminado</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500 uppercase tracking-wider block mb-2">Notas</label>
+                        <textarea class="mobile-optimized w-full p-3 border rounded-lg resize-none" rows="3" placeholder="Agregar notas..."></textarea>
+                    </div>
+                    <button onclick="saveTask('${taskName}')" class="w-full py-3 bg-traza-blue text-white rounded-lg font-medium active-scale">
+                        Guardar Cambios
+                    </button>
+                    <button onclick="closeBottomSheet()" class="w-full py-2 text-gray-600 font-medium">
+                        Cancelar
+                    </button>
+                </div>
+            `;
+            openBottomSheet(content);
+        }
+
+        // Save task
+        function saveTask(taskName) {
+            closeBottomSheet();
+            showToast('✓ Tarea actualizada');
+        }
+
+        // Open task options
+        function openTaskOptions(taskName) {
+            const content = `
+                <h3 class="font-semibold text-lg mb-4">${taskName}</h3>
+                <div class="space-y-2">
+                    <button onclick="editTask('${taskName}')" class="w-full py-3 bg-gray-100 text-left px-4 rounded-lg font-medium hover:bg-gray-200 active-scale flex items-center gap-3">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                        </svg>
+                        Editar
+                    </button>
+                    <button onclick="changeStatus('en_obra'); closeBottomSheet(); showToast('Estado cambiado a En Obra');" class="w-full py-3 bg-gray-100 text-left px-4 rounded-lg font-medium hover:bg-gray-200 active-scale flex items-center gap-3">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Cambiar Estado
+                    </button>
+                    <button onclick="closeBottomSheet(); showToast('Notificación enviada');" class="w-full py-3 bg-gray-100 text-left px-4 rounded-lg font-medium hover:bg-gray-200 active-scale flex items-center gap-3">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                        </svg>
+                        Enviar Recordatorio
+                    </button>
+                    <button onclick="deleteTask('${taskName}')" class="w-full py-3 bg-red-50 text-red-600 text-left px-4 rounded-lg font-medium hover:bg-red-100 active-scale flex items-center gap-3">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                        Eliminar Tarea
+                    </button>
+                    <button onclick="closeBottomSheet()" class="w-full py-2 mt-2 text-gray-600 font-medium">
+                        Cancelar
+                    </button>
+                </div>
+            `;
+            openBottomSheet(content);
+        }
+
+        // Delete task
+        function deleteTask(taskName) {
+            closeBottomSheet();
+            showToast('⚠ Tarea eliminada', 2000);
+        }
+
+        // Convert nota to pendiente
+        let currentNotaToConvert = null;
+
+        function convertNotaToPendiente(notaText) {
+            // Find the nota
+            const nota = notasData.find(n => n.contenido === notaText);
+            currentNotaToConvert = nota;
+
+            const content = `
+                <h3 class="font-semibold text-lg mb-4">Convertir en Pendiente</h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-xs text-gray-500 uppercase tracking-wider block mb-2">Descripción</label>
+                        <textarea id="notaDescripcion" class="mobile-optimized w-full p-3 border rounded-lg resize-none" rows="3">${notaText}</textarea>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500 uppercase tracking-wider block mb-2">Área</label>
+                        <select id="notaArea" class="mobile-optimized w-full p-3 border rounded-lg">
+                            <option value="hall-entrada" ${nota?.area === 'Hall entrada' ? 'selected' : ''}>Hall entrada</option>
+                            <option value="sala-estar" ${nota?.area === 'Sala de estar' ? 'selected' : ''}>Sala de estar</option>
+                            <option value="cocina" ${nota?.area === 'Cocina' ? 'selected' : ''}>Cocina</option>
+                            <option value="terraza">Terraza</option>
+                            <option value="baño">Baño</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500 uppercase tracking-wider block mb-2">Encargado</label>
+                        <select id="notaEncargado" class="mobile-optimized w-full p-3 border rounded-lg">
+                            <option value="">Seleccionar encargado</option>
+                            <option value="Juan Pérez|Constructor">Juan Pérez - Constructor</option>
+                            <option value="Roberto Muñoz|Lighting designer">Roberto Muñoz - Lighting Designer</option>
+                            <option value="Andrea Silva|Paisajista">Andrea Silva - Paisajista</option>
+                        </select>
+                    </div>
+                    <button onclick="confirmConvertNota()" class="w-full py-3 bg-traza-blue text-white rounded-lg font-medium active-scale">
+                        Crear Pendiente y Notificar
+                    </button>
+                    <button onclick="closeBottomSheet()" class="w-full py-2 text-gray-600 font-medium">
+                        Cancelar
+                    </button>
+                </div>
+            `;
+            openBottomSheet(content);
+        }
+
+        // Confirm convert nota
+        function confirmConvertNota() {
+            const descripcion = document.getElementById('notaDescripcion').value;
+            const area = document.getElementById('notaArea').value;
+            const encargadoValue = document.getElementById('notaEncargado').value;
+
+            if (!encargadoValue) {
+                showToast('⚠ Selecciona un encargado', 2000);
+                return;
+            }
+
+            const [encargado, rol] = encargadoValue.split('|');
+
+            // Create new pendiente
+            const nuevoPendiente = {
+                id: 'tarea-nota-' + Date.now(),
+                nombre: descripcion.split('.')[0], // First sentence as title
+                encargado: encargado,
+                rol: rol,
+                estado: 'pausa',
+                notas: descripcion,
+                origen: 'nota'
+            };
+
+            // Add to pendientes data
+            if (!pendientesData[area]) {
+                pendientesData[area] = [];
+            }
+            pendientesData[area].push(nuevoPendiente);
+
+            // Mark nota as converted
+            if (currentNotaToConvert) {
+                currentNotaToConvert.convertida = true;
+            }
+
+            closeBottomSheet();
+            showToast('✓ Pendiente creado y notificado', 3000);
+
+            // Update UI
+            renderAllPendientes();
+
+            // Navigate to pendientes after short delay
+            setTimeout(() => {
+                showView('pendientes');
+                showToast('📋 Ver nuevo pendiente', 2000);
+            }, 1500);
+        }
+
+        // ========== Original Functions ==========
+
+        // Toggle menu
+        function toggleMenu() {
+            const menu = document.getElementById('sideMenu');
+            const overlay = document.getElementById('overlay');
+            const panel = document.getElementById('menuPanel');
+
+            if (menu.classList.contains('pointer-events-none')) {
+                menu.classList.remove('pointer-events-none');
+                overlay.classList.add('bg-opacity-50');
+                panel.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            } else {
+                menu.classList.add('pointer-events-none');
+                overlay.classList.remove('bg-opacity-50');
+                panel.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+
+        // Show view
+        function showView(viewName) {
+            document.querySelectorAll('.view').forEach(view => {
+                view.classList.add('hidden');
+            });
+
+            const selectedView = document.getElementById(viewName + '-view');
+            if (selectedView) {
+                selectedView.classList.remove('hidden');
+                window.scrollTo(0, 0);
+            }
+
+            // Cerrar menú si está abierto
+            const menu = document.getElementById('sideMenu');
+            if (!menu.classList.contains('pointer-events-none')) {
+                toggleMenu();
+            }
+        }
+
+        // Toggle área en pendientes
+        function toggleArea(areaId) {
+            const area = document.getElementById('area-' + areaId);
+            const arrow = document.getElementById('arrow-area-' + areaId);
+
+            if (area.classList.contains('area-collapsed')) {
+                area.classList.remove('area-collapsed');
+                area.classList.add('area-expanded');
+                arrow.style.transform = 'rotate(180deg)';
+            } else {
+                area.classList.add('area-collapsed');
+                area.classList.remove('area-expanded');
+                arrow.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Toggle asunto en visitas
+        function toggleAsunto(asuntoId) {
+            const asunto = document.getElementById('asunto-' + asuntoId);
+            const arrow = document.getElementById('arrow-' + asuntoId);
+
+            if (asunto.classList.contains('area-collapsed')) {
+                asunto.classList.remove('area-collapsed');
+                asunto.classList.add('area-expanded');
+                arrow.style.transform = 'rotate(180deg)';
+            } else {
+                asunto.classList.add('area-collapsed');
+                asunto.classList.remove('area-expanded');
+                arrow.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Toggle visita detalle
+        function toggleVisitaDetalle(visitaId) {
+            const detalle = document.getElementById('detalle-' + visitaId);
+            const arrow = document.getElementById('arrow-' + visitaId);
+
+            if (detalle.classList.contains('area-collapsed')) {
+                detalle.classList.remove('area-collapsed');
+                detalle.classList.add('area-expanded');
+                arrow.style.transform = 'rotate(180deg)';
+            } else {
+                detalle.classList.add('area-collapsed');
+                detalle.classList.remove('area-expanded');
+                arrow.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Cerrar menú al hacer clic fuera
+        document.addEventListener('click', function(event) {
+            const menu = document.getElementById('sideMenu');
+            const menuPanel = document.getElementById('menuPanel');
+            const menuButton = event.target.closest('button');
+            
+            if (!menu.classList.contains('pointer-events-none') && 
+                !menuPanel.contains(event.target) && 
+                (!menuButton || !menuButton.onclick || !menuButton.onclick.toString().includes('toggleMenu'))) {
+                toggleMenu();
+            }
+        });
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', function() {
+            renderCalendar();
+            renderAllPendientes();
+            showView('visitas');
+        });
+    </script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(registration => {
+                        console.log('Service Worker registrado con éxito:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('Error al registrar el Service Worker:', error);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
