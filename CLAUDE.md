@@ -1,26 +1,195 @@
-# TRAZA - Sistema de Gestión de Proyectos Arquitectónicos
+# ESANT MARIA - Sistema de Gestión de Proyectos Arquitectónicos
 
 ## Contexto del Proyecto
 
-TRAZA es una plataforma web mobile-first diseñada para gestionar proyectos de arquitectura, facilitando la coordinación entre especialistas y la comunicación directa con el equipo. El objetivo es consolidar herramientas dispersas (Excel, WhatsApp, Drive, Email, papel) en una solución centralizada, simple y visual.
+ESANT MARIA es una plataforma web mobile-first diseñada para gestionar proyectos de arquitectura, facilitando la coordinación entre especialistas y la comunicación directa con el equipo. El objetivo es consolidar herramientas dispersas (Excel, WhatsApp, Drive, Email, papel) en una solución centralizada, simple y visual.
 
 **Cliente:** Felipe Larraín (INVALS)  
 **Fecha inicio:** Octubre 2025  
 **Estado:** Fase de desarrollo - MVP  
-**Última revisión de diseño:** Octubre 27, 2025
+**Última revisión de diseño:** Noviembre 6, 2025
+
+## Sistema de Diseño - Noviembre 2025
+
+### Paleta de Colores Actualizada
+
+```css
+colors: {
+    'esant': {
+      'black': '#000000',      // Negro puro - Botones principales, texto, menú
+      'white': '#FFFFFF',      // Blanco puro - Fondos de cards
+      'gray': {
+        100: '#F5F5F5',        // Fondos de página
+        200: '#E8E8E8',        // Bordes, divisores
+        400: '#9E9E9E',        // Texto secundario
+        600: '#757575',        // Iconos inactivos
+        800: '#424242',        // Texto principal
+      },
+      'red': '#F44336',        // Notificaciones, alertas
+      'green': '#25D366',      // WhatsApp
+    }
+}
+```
+
+**Referencia completa:** Ver `esant-maria-design-system.md` para detalles de implementación
+
+### Sistema de Botones
+
+```css
+.btn-primary {
+  background: #000000; /* Negro puro */
+  color: #ffffff;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  min-height: 44px; /* Touch target mínimo */
+}
+
+.btn-whatsapp {
+  background: #25d366; /* Verde WhatsApp */
+  color: #ffffff;
+  padding: 10px 20px;
+  border-radius: 20px; /* Más redondeado */
+  font-weight: 500;
+}
+
+.btn-accent {
+  background: #f44336; /* Rojo para alertas */
+  color: #ffffff;
+  padding: 12px 24px;
+  border-radius: 8px;
+}
+
+.btn-secondary {
+  background: #e8e8e8; /* Gris claro */
+  color: #424242; /* Texto gris oscuro */
+  padding: 8px 16px;
+  border-radius: 8px;
+}
+```
+
+**Componente React:** `client/src/components/common/Button.tsx`
 
 ## Filosofía de Diseño
 
-- **Simple y al grano:** Sin complejidad innecesaria
+Basado en los 10 principios de buen diseño de Dieter Rams:
+
+1. **Innovador** - Uso de PWA mobile-first
+2. **Útil** - Cada elemento tiene una función clara
+3. **Estético** - Minimalista y limpio
+4. **Comprensible** - Interfaz autoexplicativa
+5. **Discreto** - Sin elementos decorativos innecesarios
+6. **Honesto** - No promete más de lo que ofrece
+7. **Duradero** - Diseño atemporal
+8. **Detallado** - Cada pixel tiene propósito
+9. **Sustentable** - Ligero y eficiente
+10. **Menos es más** - Solo lo esencial
+
+### Aplicación Práctica
+
+- **Super amigable:** Interfaz clara sin complejidad visual
+- **Straight-forward:** Acciones directas, sin menús anidados
 - **Mobile-first:** Diseñada para usar con una mano en obra
-- **Visual:** Estados con colores claros, información accesible de un vistazo
-- **Integrada:** WhatsApp nativo desde cada tarea, notificaciones inteligentes
-- **Offline-capable:** Funciona sin conexión en terreno (PWA)
-- **Flujo natural:** De visita → notas por área → pendientes → notificación automática
+- **Visual pero simple:** Estados con colores claros, mínimo uso de íconos
+- **Cards limpios:** Fondo blanco (#FFFFFF), sombras sutiles, espaciado generoso
+- **Tipografía legible:** Tamaños claros (16px base), jerarquía visual mediante peso, no color
+- **Footer constante:** "ESANT MARIA" siempre visible
+- **Colores sólidos:** Sin gradientes ni efectos decorativos
+- **Alto contraste:** Negro sobre blanco para máxima legibilidad
+
+**Referencia completa:** Ver `esant-maria-design-system.md`
+
+## Componentes UI Actualizados
+
+### Sistema Tipográfico (Basado en Dieter Rams)
+
+```css
+/* Tamaños de fuente */
+--text-xs: 12px; /* Metadata, timestamps */
+--text-sm: 14px; /* Texto secundario */
+--text-base: 16px; /* Texto principal */
+--text-lg: 18px; /* Subtítulos */
+--text-xl: 20px; /* Títulos de sección */
+--text-2xl: 24px; /* Títulos principales */
+
+/* Pesos */
+--font-normal: 400;
+--font-medium: 500;
+--font-semibold: 600;
+--font-bold: 700;
+```
+
+**Font Family:** `-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`
+
+### Cards
+
+```css
+.card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+```
+
+**Componente React:** `client/src/components/common/Card.tsx`
+
+### Badges (Indicadores)
+
+```css
+.badge-count {
+  background: #f44336; /* Rojo */
+  color: #ffffff;
+  min-width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.badge-notification {
+  background: #000000; /* Negro */
+  color: #ffffff;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+}
+```
+
+**Componente React:** `client/src/components/common/Badge.tsx`
+
+### Menú Lateral
+
+```css
+.menu {
+  background: #000000; /* Negro puro */
+  color: #ffffff;
+  padding: 24px;
+  border-radius: 20px;
+}
+
+.menu-item {
+  padding: 16px 0;
+  font-size: 18px;
+  font-weight: 500;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+```
+
+**Características:**
+
+- Fondo negro sólido
+- Texto blanco
+- Botón "Cambiar proyecto" con indicador visual
+- Botón "Cerrar Sesión" en rojo (#F44336)
+- Items separados con líneas divisorias sutiles
 
 ## Stack Tecnológico
 
 ### Frontend
+
 ```
 - React 18 + TypeScript
 - Tailwind CSS (diseño responsive)
@@ -31,23 +200,25 @@ TRAZA es una plataforma web mobile-first diseñada para gestionar proyectos de a
 ```
 
 ### Backend
+
 ```
-- Node.js + Express
-- PostgreSQL (base de datos)
-- Prisma ORM
-- JWT Authentication
+- Supabase (PostgreSQL + Auth + Storage + Realtime)
+  ✅ IMPLEMENTADO: Noviembre 2025
+- JWT Authentication (via Supabase Auth)
 - WhatsApp Business API (o links directos para MVP)
 ```
 
 ### Infraestructura
+
 ```
 - Vercel (hosting frontend)
-- Railway/Render (backend)
-- Supabase (alternativa: DB + Auth + Storage)
-- AWS S3 / Cloudinary (documentos e imágenes)
+- Supabase (DB + Auth + Storage + Realtime)
+  ✅ IMPLEMENTADO: Configurado y conectado
+- Supabase Storage (documentos e imágenes)
 ```
 
 ### DevOps
+
 ```
 - GitHub (repositorio)
 - GitHub Actions (CI/CD)
@@ -60,7 +231,7 @@ TRAZA es una plataforma web mobile-first diseñada para gestionar proyectos de a
 ### Estructura de Carpetas
 
 ```
-traza/
+esant-maria/
 ├── client/                 # Frontend React
 │   ├── public/
 │   ├── src/
@@ -277,6 +448,7 @@ traza/
 ## API Endpoints
 
 ### Autenticación
+
 ```
 POST   /api/auth/register
 POST   /api/auth/login
@@ -286,6 +458,7 @@ POST   /api/auth/refresh
 ```
 
 ### Proyectos
+
 ```
 GET    /api/proyectos
 GET    /api/proyectos/:id
@@ -299,378 +472,287 @@ GET    /api/proyectos/:id/resumen  # Resumen para vista principal
 ```
 
 ### Visitas
+
 ```
 GET    /api/proyectos/:proyectoId/visitas
-GET    /api/proyectos/:proyectoId/visitas/:id
+GET    /api/visitas/:id
 POST   /api/proyectos/:proyectoId/visitas
-PUT    /api/proyectos/:proyectoId/visitas/:id
-DELETE /api/proyectos/:proyectoId/visitas/:id
-POST   /api/proyectos/:proyectoId/visitas/:id/asuntos
-PUT    /api/proyectos/:proyectoId/visitas/:visitaId/asuntos/:id
-DELETE /api/proyectos/:proyectoId/visitas/:visitaId/asuntos/:id
-POST   /api/proyectos/:proyectoId/visitas/:id/convertir-pendientes
-GET    /api/proyectos/:proyectoId/visitas/proxima  # Próxima visita programada
+PUT    /api/visitas/:id
+DELETE /api/visitas/:id
+POST   /api/visitas/:id/asuntos
+PUT    /api/visitas/:id/asuntos/:asuntoId
+DELETE /api/visitas/:id/asuntos/:asuntoId
+POST   /api/visitas/:id/asuntos/:asuntoId/convertir-pendiente
 ```
 
 ### Pendientes
+
 ```
 GET    /api/proyectos/:proyectoId/pendientes
-GET    /api/proyectos/:proyectoId/pendientes/:id
+GET    /api/pendientes/:id
 POST   /api/proyectos/:proyectoId/pendientes
-PUT    /api/proyectos/:proyectoId/pendientes/:id
-DELETE /api/proyectos/:proyectoId/pendientes/:id
-PATCH  /api/proyectos/:proyectoId/pendientes/:id/estado
-GET    /api/proyectos/:proyectoId/pendientes/por-area  # Agrupados por área
-GET    /api/usuarios/:userId/pendientes  # Pendientes del usuario
+PUT    /api/pendientes/:id
+DELETE /api/pendientes/:id
+PUT    /api/pendientes/:id/estado
+GET    /api/pendientes/mis-tareas  # Para especialistas
 ```
 
 ### Documentos
+
 ```
 GET    /api/proyectos/:proyectoId/documentos
-GET    /api/proyectos/:proyectoId/documentos/:id
-POST   /api/proyectos/:proyectoId/documentos/upload
-DELETE /api/proyectos/:proyectoId/documentos/:id
-GET    /api/proyectos/:proyectoId/documentos/:id/download
-GET    /api/proyectos/:proyectoId/documentos/por-categoria
+GET    /api/documentos/:id
+POST   /api/proyectos/:proyectoId/documentos
+PUT    /api/documentos/:id
+DELETE /api/documentos/:id
+GET    /api/documentos/:id/download
 ```
 
 ### Notas
+
 ```
 GET    /api/proyectos/:proyectoId/notas
 POST   /api/proyectos/:proyectoId/notas
-PUT    /api/proyectos/:proyectoId/notas/:id
-DELETE /api/proyectos/:proyectoId/notas/:id
-POST   /api/proyectos/:proyectoId/notas/:id/convertir-pendiente
+PUT    /api/notas/:id
+DELETE /api/notas/:id
+POST   /api/notas/:id/convertir-pendiente
 ```
 
 ### Notificaciones
+
 ```
 GET    /api/notificaciones
-GET    /api/notificaciones/no-leidas/count
-PATCH  /api/notificaciones/:id/leer
-PATCH  /api/notificaciones/leer-todas
+GET    /api/notificaciones/no-leidas
+PUT    /api/notificaciones/:id/marcar-leida
+PUT    /api/notificaciones/marcar-todas-leidas
 DELETE /api/notificaciones/:id
 ```
 
+### Equipo
+
+```
+GET    /api/proyectos/:proyectoId/equipo
+POST   /api/proyectos/:proyectoId/equipo/agregar
+DELETE /api/proyectos/:proyectoId/equipo/:userId
+PUT    /api/proyectos/:proyectoId/equipo/:userId/rol
+```
+
 ### Presupuesto
+
 ```
 GET    /api/proyectos/:proyectoId/presupuesto
+POST   /api/proyectos/:proyectoId/presupuesto/item
+PUT    /api/presupuesto/:itemId
+DELETE /api/presupuesto/:itemId
 GET    /api/proyectos/:proyectoId/presupuesto/resumen
-POST   /api/proyectos/:proyectoId/presupuesto/items
-PUT    /api/proyectos/:proyectoId/presupuesto/items/:id
-DELETE /api/proyectos/:proyectoId/presupuesto/items/:id
-POST   /api/proyectos/:proyectoId/presupuesto/items/:id/actualizar-planilla
 ```
 
 ### Permisos
+
 ```
 GET    /api/proyectos/:proyectoId/permisos
-GET    /api/proyectos/:proyectoId/permisos/:id
 POST   /api/proyectos/:proyectoId/permisos
-PUT    /api/proyectos/:proyectoId/permisos/:id
-DELETE /api/proyectos/:proyectoId/permisos/:id
-GET    /api/proyectos/:proyectoId/permisos/proximos-vencimientos
+PUT    /api/permisos/:id
+DELETE /api/permisos/:id
+GET    /api/permisos/proximos-vencimientos
 ```
 
-### WhatsApp (Integración)
+### WhatsApp Integration
+
 ```
-POST   /api/whatsapp/send-message
-POST   /api/whatsapp/notify-task
-GET    /api/whatsapp/generate-link  # Genera link con mensaje pre-formateado
-```
-
-## Funcionalidades por Módulo
-
-### 1. Visitas
-
-**Objetivo:** Gestionar visitas a obra con calendario visual, notas organizadas por área y flujo directo a pendientes.
-
-**Features principales:**
-- **Calendario mensual** con estados visuales:
-  - Verde: Visita completada
-  - Rojo: Visita hoy
-  - Amarillo: Próxima visita programada
-- **Historial de visitas** colapsable con detalles
-- **Visita actual en curso:**
-  - Notas generales de la visita
-  - Áreas visitadas (colapsables)
-  - Por cada área: múltiples asuntos/tareas
-  - Asignar encargado a cada asunto
-  - Notas adicionales por asunto
-- **Conversión automática a pendientes:**
-  - Un clic convierte todos los asuntos en pendientes
-  - Notificación automática a cada encargado
-  - Mantiene relación visita → asunto → pendiente
-- **Próxima visita programada** con fecha y hora
-
-**Flujo clave validado con cliente:**
-```
-Usuario va a obra → Crea visita del día → 
-Agrega áreas visitadas → Por cada área agrega asuntos → 
-Asigna responsables → Convierte en pendientes → 
-Sistema notifica automáticamente a cada encargado
+POST   /api/whatsapp/send
+POST   /api/whatsapp/send-notification
+GET    /api/whatsapp/link/:telefono
 ```
 
-**Detalles importantes:**
-- Cada área puede tener múltiples asuntos
-- Cada asunto puede tener descripción, encargado y notas
-- El botón "Convertir en pendientes" crea todas las tareas de una vez
-- Se mantiene el registro histórico de visitas para trazabilidad
+## Flujos Principales
 
-### 2. Pendientes
+### Flujo 1: Visita → Pendiente → Notificación
 
-**Objetivo:** Gestión visual de tareas organizadas por área con estados claros y contacto directo.
-
-**Features principales:**
-- **Organización por áreas colapsables:**
-  - Sala de estar
-  - Cocina
-  - Hall entrada
-  - Terraza
-  - Baño
-  - etc (áreas dinámicas según proyecto)
-- **Estados visuales con indicadores cuadrados:**
-  - Rojo: Pausa/Bloqueado
-  - Amarillo: En obra/En proceso
-  - Verde: Terminado
-- **Información por tarea:**
-  - Descripción de la tarea
-  - Encargado (nombre y especialidad)
-  - Notas adicionales
-  - Estado visual
-- **Acciones por tarea:**
-  - Editar tarea
-  - WhatsApp directo al encargado (con mensaje pre-formateado)
-  - Cambiar estado
-- **Vista por usuario:**
-  - Cada usuario ve sus tareas asignadas
-  - Contador de pendientes activos en el menú
-- **Notificaciones automáticas:**
-  - Al asignar tarea
-  - Al cambiar estado
-  - Al agregar notas
-
-**Permisos según rol:**
-- **Admin:** Ve y edita todo
-- **Jefe proyecto:** Ve todo, edita pendientes, asigna tareas
-- **Especialista:** Ve solo sus pendientes, actualiza estados
-- **Cliente:** Ve avances (opcional, configurable)
-
-**Importante para desarrollo:**
-- WhatsApp debe abrir con mensaje pre-formateado: "Hola [Nombre], te escribo sobre la tarea: [Nombre Tarea]"
-- Estados deben ser claros y no requieren explicación
-- Notificación debe incluir link directo al pendiente
-
-### 3. Equipo
-
-**Objetivo:** Directorio del equipo con contacto directo vía WhatsApp y visibilidad de carga de trabajo.
-
-**Features:**
-- **Organización por categorías:**
-  - Arquitectura
-  - Construcción
-  - Especialistas (paisajista, lighting, etc.)
-- **Información por persona:**
-  - Nombre completo
-  - Rol/especialidad
-  - Email
-  - Teléfono
-  - Contador de pendientes activos
-- **Acciones:**
-  - WhatsApp directo desde cada contacto
-  - Ver pendientes de la persona (link directo)
-  - Agregar/remover del proyecto (solo admin)
-- **Badges visuales:**
-  - Número de pendientes activos en rojo
-  - Indica claramente quién tiene más carga
-
-**Detalles importantes:**
-- WhatsApp debe funcionar con un toque
-- El contador de pendientes debe ser en tiempo real
-- Cliente solicitó ver claramente quién tiene más tareas
-
-### 4. Documentos
-
-**Objetivo:** Repositorio centralizado categorizado con estados y fácil acceso.
-
-**Features:**
-- **Categorías principales:**
-  - **Planos:** PDFs, DWG
-  - **Permisos:** PDFs con estados (vigente, en trámite, vencido)
-  - **Anteproyecto:** Documentos de diseño inicial
-  - **Presupuestos:** Excel, PDFs
-  - **Contratos**
-  - **Fotos de obra**
-- **Por cada documento:**
-  - Nombre archivo
-  - Fecha de actualización
-  - Estado visual (según categoría)
-  - Botón de descarga
-- **Botón "Subir documento"** con categorización obligatoria
-- **Control de versiones** (nice-to-have para MVP)
-
-**Permisos:**
-- Admin: Sube, elimina todo
-- Jefe proyecto: Sube documentos
-- Especialistas: Solo ven documentos relevantes
-- Cliente: Ve solo lo compartido
-
-### 5. Presupuesto / Gastos
-
-**Objetivo:** Seguimiento de costos con resumen visual y planillas externas con notificaciones.
-
-**Features principales:**
-- **Tarjeta de resumen destacada:**
-  - Presupuesto total (grande y visible)
-  - Monto gastado
-  - Monto disponible
-  - Barra de progreso visual
-  - Porcentaje ejecutado
-- **Desglose por categorías:**
-  - Diseño y Arquitectura
-  - Constructor
-  - Materiales
-  - Mobiliario
-  - Otros
-- **Por cada categoría:**
-  - Monto asignado
-  - Barra de progreso individual
-  - Link a planilla Excel externa (opcional)
-- **Planillas de seguimiento:**
-  - Materiales.xlsx
-  - Paisajismo.xlsx
-  - Iluminación.xlsx
-  - etc.
-- **Sistema de notificaciones:**
-  - Cada planilla puede activar notificaciones
-  - Al actualizar Excel, se notifica al equipo
-  - Badge "Notifica cambios" visible
-
-**Importante según cliente:**
-- El resumen debe ser muy visual y claro
-- Prioridad en la barra de progreso general
-- Las planillas Excel son externas (Google Drive, Dropbox)
-- Cliente quiere saber inmediatamente cuando hay cambios
-
-### 6. Permisos
-
-**Objetivo:** Tracking de permisos municipales con estados y alertas de vencimiento.
-
-**Features:**
-- **Listado de permisos:**
-  - Permiso de Edificación
-  - Permiso Municipal
-  - Recepción de Obra
-  - Otros permisos específicos
-- **Por cada permiso:**
-  - Nombre/tipo
-  - Estado visual (Pendiente, En trámite, Aprobado, Vencido)
-  - Fecha de solicitud
-  - Fecha de aprobación
-  - Vigencia (en meses)
-  - Fecha de vencimiento
-  - Notas
-- **Estados con colores:**
-  - Verde: Aprobado y vigente
-  - Amarillo: En trámite
-  - Gris: Pendiente
-  - Rojo: Vencido (alerta)
-- **Alertas automáticas:**
-  - Notificación 30 días antes de vencimiento
-  - Notificación al vencer
-
-**Relación con Documentos:**
-- Cada permiso puede tener documento adjunto
-- Click en permiso lleva al documento asociado
-
-### 7. Notas
-
-**Objetivo:** Notas rápidas convertibles en pendientes con organización opcional por área.
-
-**Features:**
-- **Nueva nota rápida:**
-  - Campo de texto amplio
-  - Selector de área (opcional)
-  - Botón "Guardar"
-- **Historial de notas:**
-  - Fecha y hora de creación
-  - Área (si aplica)
-  - Contenido de la nota
-  - Botón "Convertir en pendiente"
-- **Conversión a pendiente:**
-  - Un clic abre modal con:
-    - Descripción pre-cargada
-    - Selector de encargado
-    - Área (si la nota tiene área)
-    - Notas adicionales
-  - Al confirmar, crea el pendiente y notifica
-
-**Diferencia con asuntos de visita:**
-- Notas son más informales y rápidas
-- No requieren estar en una visita
-- Se pueden convertir después
-- Útil para ideas sobre la marcha
-
-### 8. Notificaciones
-
-**Objetivo:** Sistema de alertas inteligente con tipos claros y enlaces directos.
-
-**Tipos de notificaciones:**
-- **Tarea asignada** (rojo): "Juan Pérez te asignó 'Pintar muro verde' en Sala de estar"
-- **Tarea actualizada** (verde): "Roberto Muñoz completó 'Instalación eléctrica'"
-- **Visita programada** (azul): "Próxima visita programada para el 20/07/25 a las 10:00"
-- **Documento subido** (gris): "Se subió nuevo documento: Plano_v3.pdf"
-- **Presupuesto actualizado** (amarillo): "Se actualizó la planilla Materiales.xlsx"
-
-**Features:**
-- **Badge con contador** en header (punto rojo si hay no leídas)
-- **Lista de notificaciones:**
-  - Icono según tipo
-  - Título y mensaje
-  - Tiempo relativo ("Hace 2 horas", "Ayer")
-  - Color de fondo según tipo
-- **Acciones:**
-  - Click lleva directamente al elemento
-  - Marcar como leída
-  - "Marcar todas como leídas"
-  - Eliminar notificación
-- **Push notifications (PWA):**
-  - Notificaciones en el dispositivo
-  - Funcionan offline
-  - Click abre la app en la sección correcta
-
-**Reglas de notificación automática:**
-1. Al asignar pendiente → notificar al encargado
-2. Al cambiar estado de pendiente → notificar al creador
-3. Al programar visita → notificar al equipo
-4. Al subir documento → notificar según categoría
-5. Al actualizar planilla presupuesto → notificar si está activado
-
-## Consideraciones Técnicas
-
-### PWA (Progressive Web App)
-
-**Objetivo:** Funcionar offline en obra sin conexión.
-
-**Implementación:**
-```javascript
-// service-worker.js
-- Cache de assets estáticos (HTML, CSS, JS, imágenes)
-- Cache de API responses con estrategia stale-while-revalidate
-- Queue de acciones offline (crear pendiente, agregar nota)
-- Sincronización background cuando vuelve conexión
+```mermaid
+graph TD
+    A[Nueva Visita] --> B[Tomar Notas por Área]
+    B --> C[Convertir a Pendiente]
+    C --> D[Asignar Responsable]
+    D --> E[Notificar por WhatsApp]
+    E --> F[Seguimiento Visual]
 ```
 
-**Manifest.json:**
+1. **Durante la visita:**
+
+   - Abrir visita del día
+   - Tomar notas por área (cocina, baño, etc)
+   - Notas generales opcionales
+
+2. **Post-visita:**
+
+   - Convertir notas en pendientes con 1 clic
+   - Asignar responsable automáticamente
+   - Estado inicial: "pausa"
+
+3. **Notificación:**
+
+   - WhatsApp directo al responsable
+   - Link a la tarea específica
+   - Confirmación de recepción
+
+4. **Seguimiento:**
+   - Estados visuales con colores
+   - Contador de pendientes por área
+   - Vista filtrada por especialista
+
+### Flujo 2: Gestión de Pendientes
+
+```mermaid
+graph LR
+    A[Pendiente Nuevo] --> B{Estado}
+    B -->|Pausa| C[Gris]
+    B -->|En Obra| D[Amarillo]
+    B -->|Terminado| E[Verde]
+    D --> F[WhatsApp al Arquitecto]
+    E --> G[Notificación de Cierre]
+```
+
+Estados de pendientes:
+
+- **Pausa** (Gris): Pendiente de comenzar
+- **En Obra** (Amarillo): En progreso
+- **Terminado** (Verde): Completado
+
+### Flujo 3: Documentos y Permisos
+
+```mermaid
+graph TD
+    A[Subir Documento] --> B{Tipo}
+    B -->|Permiso| C[Track Vencimiento]
+    B -->|Plano| D[Versión Control]
+    B -->|Presupuesto| E[Link a Excel]
+    C --> F[Alerta 30 días antes]
+```
+
+## Componentes React Principales
+
+### Layout Components
+
+```typescript
+// Header.tsx
+interface HeaderProps {
+  onMenuClick: () => void;
+  notificationCount: number;
+}
+
+// SideMenu.tsx
+interface SideMenuProps {
+  isOpen: boolean;
+  onClose: () => void;
+  currentProject: Project;
+  onProjectChange: () => void;
+}
+
+// Footer.tsx
+const Footer = () => {
+  return <div className="text-esant-light-gray">ESANT MARIA</div>;
+};
+```
+
+### Feature Components
+
+```typescript
+// VisitCard.tsx
+interface VisitCardProps {
+  visit: Visit;
+  onNotify: () => void;
+  onAddArea: (area: string) => void;
+}
+
+// PendingTaskCard.tsx
+interface PendingTaskProps {
+  task: Pendiente;
+  onWhatsApp: () => void;
+  onEdit: () => void;
+  onStatusChange: (status: EstadoPendiente) => void;
+}
+
+// NotificationCard.tsx
+interface NotificationProps {
+  notification: Notificacion;
+  onRead: () => void;
+}
+```
+
+### Common Components
+
+```typescript
+// Button.tsx
+interface ButtonProps {
+  variant: "primary" | "success" | "danger" | "secondary";
+  size?: "sm" | "md" | "lg";
+  fullWidth?: boolean;
+  onClick?: () => void;
+  children: React.ReactNode;
+}
+
+// Card.tsx
+interface CardProps {
+  className?: string;
+  children: React.ReactNode;
+}
+
+// Badge.tsx
+interface BadgeProps {
+  count: number;
+  color?: "red" | "gray";
+}
+```
+
+## Estado Global (Zustand)
+
+### Project Store
+
+```typescript
+interface ProjectStore {
+  currentProject: Project | null;
+  projects: Project[];
+  setCurrentProject: (project: Project) => void;
+  loadProjects: () => Promise<void>;
+}
+```
+
+### UI Store
+
+```typescript
+interface UIStore {
+  sideMenuOpen: boolean;
+  currentView: ViewType;
+  toggleSideMenu: () => void;
+  navigateTo: (view: ViewType) => void;
+}
+```
+
+### Notification Store
+
+```typescript
+interface NotificationStore {
+  notifications: Notificacion[];
+  unreadCount: number;
+  loadNotifications: () => Promise<void>;
+  markAsRead: (id: string) => void;
+  markAllAsRead: () => void;
+}
+```
+
+## Optimizaciones Mobile
+
+### PWA Configuration
+
 ```json
 {
-  "name": "TRAZA",
-  "short_name": "TRAZA",
-  "description": "Gestión de Proyectos Arquitectónicos",
+  "name": "ESANT MARIA",
+  "short_name": "ESANT MARIA",
   "start_url": "/",
   "display": "standalone",
   "theme_color": "#1A1A1A",
-  "background_color": "#F5F5F5",
+  "background_color": "#F0F0F0",
   "icons": [
     {
       "src": "/icon-192.png",
@@ -686,435 +768,363 @@ Sistema notifica automáticamente a cada encargado
 }
 ```
 
-**Funcionalidad offline crítica:**
-- Ver pendientes asignados
-- Agregar notas
-- Cambiar estado de tareas
-- Ver calendario de visitas
-- Ver equipo y contactos
+### Offline Strategy
 
-### Autenticación
-
-**Strategy:** JWT con refresh tokens
-
-```typescript
-// Login flow
-1. Usuario envía email/password
-2. Backend valida y genera:
-   - accessToken (corta vida: 15min)
-   - refreshToken (larga vida: 7 días)
-3. Frontend guarda tokens en localStorage
-4. Cada request incluye accessToken en header
-5. Al expirar accessToken, usar refreshToken para renovar
-6. Si refreshToken expira, requerir login
-```
-
-### Permisos y Roles
-
-```typescript
-const PERMISSIONS = {
-  admin: {
-    proyectos: ['read', 'create', 'update', 'delete'],
-    pendientes: ['read', 'create', 'update', 'delete', 'assign'],
-    documentos: ['read', 'upload', 'delete'],
-    presupuesto: ['read', 'update'],
-    permisos: ['read', 'create', 'update', 'delete'],
-    equipo: ['read', 'add', 'remove'],
-    visitas: ['read', 'create', 'update', 'delete'],
-    notas: ['read', 'create', 'update', 'delete']
-  },
-  jefe_proyecto: {
-    proyectos: ['read', 'update'],
-    pendientes: ['read', 'create', 'update', 'assign'],
-    documentos: ['read', 'upload'],
-    presupuesto: ['read'],
-    permisos: ['read'],
-    equipo: ['read'],
-    visitas: ['read', 'create', 'update'],
-    notas: ['read', 'create', 'update']
-  },
-  especialista: {
-    proyectos: ['read'],
-    pendientes: ['read_own', 'update_own'],
-    documentos: ['read'],
-    presupuesto: null,
-    permisos: null,
-    equipo: ['read'],
-    visitas: ['read'],
-    notas: ['read']
-  },
-  cliente: {
-    proyectos: ['read'],
-    pendientes: ['read'],
-    documentos: ['read'],
-    presupuesto: ['read_summary'],
-    permisos: ['read'],
-    equipo: ['read'],
-    visitas: ['read'],
-    notas: null
-  }
-}
-```
-
-### Integración WhatsApp
-
-**Decisión para MVP:** Links directos (opción 2)
-
-**Implementación:**
-```typescript
-// Generar link con mensaje pre-formateado
-const generateWhatsAppLink = (phoneNumber: string, taskName: string, userName: string) => {
-  const message = `Hola ${userName}, te escribo sobre la tarea: ${taskName}`;
-  const encodedMessage = encodeURIComponent(message);
-  return `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
-}
-```
-
-**Ubicaciones donde aparece WhatsApp:**
-1. **Pendientes:** Cada tarea tiene botón de WhatsApp
-2. **Equipo:** Cada miembro tiene botón de WhatsApp
-3. **Notificaciones:** Algunas notificaciones pueden incluir "Responder por WhatsApp"
-
-**Flujo notificación + WhatsApp:**
-```typescript
-// Cuando se asigna pendiente:
-1. Crear notificación in-app
-2. Enviar push notification (si está habilitado)
-3. Botón en notificación abre WhatsApp con mensaje pre-formateado
-```
-
-**Para fase 2 (WhatsApp Business API):**
-- Envío automático de mensajes
-- Confirmaciones de lectura
-- Plantillas de mensajes aprobadas
-- Costos: $X por mensaje
-
-### Optimización Mobile
-
-**Principios de diseño mobile-first:**
-- Touch targets mínimo 44x44px
-- Font-size mínimo 16px (evita zoom iOS)
-- Sin hover states, solo :active
-- Gestos intuitivos (swipe, long-press)
-- Navegación con pulgar (bottom nav)
-- Minimizar text input (usar selects, botones)
-- Transiciones suaves pero rápidas (300ms)
-- Feedback visual inmediato en todas las acciones
-
-**Performance:**
 ```javascript
-- Lazy loading de imágenes y componentes pesados
-- Code splitting por ruta
-- Virtualización de listas largas (react-window)
-- Debounce en búsquedas (300ms)
-- Optimistic UI updates (actualizar UI antes de respuesta)
-- Compresión de imágenes automática
-- Cache agresivo de datos estáticos
+// Service Worker con Cache First para assets
+// Network First para API calls
+// Fallback offline page
+
+self.addEventListener("fetch", (event) => {
+  if (event.request.url.includes("/api/")) {
+    // Network first para API
+    event.respondWith(networkFirst(event.request));
+  } else {
+    // Cache first para assets
+    event.respondWith(cacheFirst(event.request));
+  }
+});
 ```
 
-**Específico para obra:**
-- Funcionar con una mano
-- Botones grandes y espaciados
-- Confirmaciones visuales claras
-- Trabajar bien con guantes (touch más sensible)
-- Contraste alto para ver en sol
+### Touch Optimizations
 
-## Testing
+- Minimum touch target: 44x44px
+- Swipe gestures para navegación
+- Pull-to-refresh en listas
+- Haptic feedback en acciones importantes
+- Prevención de zoom accidental
+
+## Integración WhatsApp
+
+### Opción 1: Links Directos (MVP)
+
+```typescript
+function openWhatsApp(phone: string, message: string) {
+  const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+  window.open(url, "_blank");
+}
+```
+
+### Opción 2: WhatsApp Business API
+
+```typescript
+// Requiere aprobación de Meta
+async function sendWhatsAppNotification(
+  to: string,
+  template: string,
+  params: any
+) {
+  return await fetch("/api/whatsapp/send", {
+    method: "POST",
+    body: JSON.stringify({ to, template, params }),
+  });
+}
+```
+
+## Testing Strategy
 
 ### Unit Tests
-```
-- Utils y helpers
-- Componentes aislados
-- Hooks personalizados
-- Servicios API
-- Validaciones de formulario
-- Formateo de fechas/números
+
+```typescript
+// Componentes con React Testing Library
+describe("PendingTaskCard", () => {
+  it("should display task information correctly");
+  it("should call onWhatsApp when button clicked");
+  it("should update status on selection");
+});
 ```
 
 ### Integration Tests
-```
-- Flujos completos por módulo
-- API endpoints
-- Autenticación y permisos
-- Notificaciones
-- Conversión visita → pendientes
+
+```typescript
+// Flujos completos con Cypress
+describe("Visit to Pending Flow", () => {
+  it("should create pending from visit notes");
+  it("should notify assigned user");
+  it("should update pending count");
+});
 ```
 
-### E2E Tests (Prioridad para MVP)
-```
-- Flujos críticos:
-  1. Login y navegación básica
-  2. Crear visita → agregar asuntos → convertir a pendientes
-  3. Ver pendientes propios y cambiar estado
-  4. Abrir WhatsApp desde tarea
-  5. Subir documento
-  6. Ver presupuesto
+### E2E Tests
+
+```typescript
+// Flujos críticos de negocio
+describe("Complete Project Workflow", () => {
+  it("should handle full visit → pending → completion flow");
+  it("should sync across multiple devices");
+  it("should work offline and sync when online");
+});
 ```
 
-### Testing manual prioritario
+## Performance Targets
+
+- **First Contentful Paint:** < 1.5s
+- **Time to Interactive:** < 3s
+- **Lighthouse Score:** > 90
+- **Bundle Size:** < 200KB gzipped
+- **Offline Ready:** 100% funcionalidad core
+
+## Security Considerations
+
+### Row Level Security (Supabase)
+
+```sql
+-- Usuarios solo ven proyectos asignados
+CREATE POLICY "Users can view assigned projects" ON projects
+  FOR SELECT USING (
+    auth.uid() IN (
+      SELECT user_id FROM project_users WHERE project_id = projects.id
+    )
+  );
+
+-- Especialistas solo ven sus pendientes
+CREATE POLICY "Specialists see own tasks" ON pendientes
+  FOR SELECT USING (
+    encargado_id = auth.uid() OR
+    created_by = auth.uid() OR
+    EXISTS (
+      SELECT 1 FROM project_users
+      WHERE project_id = pendientes.project_id
+      AND user_id = auth.uid()
+      AND role IN ('admin', 'jefe_proyecto')
+    )
+  );
 ```
-- Funcionamiento offline (PWA)
-- Notificaciones push
-- WhatsApp en diferentes dispositivos
-- Rendimiento en mobile 3G/4G
-- Uso con una mano
-- Estados visuales claros
+
+### Authentication Flow
+
+```typescript
+// JWT con refresh tokens
+// Sesiones de 7 días
+// 2FA opcional para admins
+// Rate limiting en endpoints críticos
 ```
 
 ## Deployment
 
-### Environments
+### CI/CD Pipeline
 
-```
-Development
-- Frontend: http://localhost:5173
-- Backend: http://localhost:3000
-- DB: PostgreSQL local
-- WhatsApp: Links directos (sin API)
+```yaml
+# GitHub Actions
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
-Staging
-- Frontend: traza-staging.vercel.app
-- Backend: traza-api-staging.railway.app
-- DB: PostgreSQL Railway
-- Purpose: Testing con cliente
+jobs:
+  test:
+    - npm run lint
+    - npm run type-check
+    - npm run test
 
-Production
-- Frontend: traza.cl (custom domain)
-- Backend: api.traza.cl
-- DB: PostgreSQL producción (redundancia)
-- CDN: Cloudflare
-- Monitoring: Sentry + custom analytics
+  deploy:
+    - Vercel deployment
+    - Supabase migrations
 ```
 
-### Variables de Entorno
+## Monitoreo
 
-```bash
-# Frontend (.env)
-VITE_API_URL=https://api.traza.cl
-VITE_WHATSAPP_ENABLED=true
-VITE_SENTRY_DSN=
-VITE_ENV=production
+### Analytics
 
-# Backend (.env)
-NODE_ENV=production
-PORT=3000
-DATABASE_URL=postgresql://...
-JWT_SECRET=
-JWT_REFRESH_SECRET=
-JWT_EXPIRES_IN=15m
-JWT_REFRESH_EXPIRES_IN=7d
+- Google Analytics 4 (comportamiento usuarios)
+- Sentry (error tracking)
+- Vercel Analytics (performance)
 
-# Storage
-AWS_ACCESS_KEY=
-AWS_SECRET_KEY=
-AWS_BUCKET_NAME=traza-documents
-AWS_REGION=us-east-1
+### Métricas Clave
 
-# WhatsApp (opcional, fase 2)
-WHATSAPP_API_KEY=
-WHATSAPP_PHONE_ID=
+- Visitas convertidas a pendientes
+- Tiempo promedio de resolución
+- Tasa de uso de WhatsApp
+- Engagement por rol de usuario
 
-# Email (opcional, fase 2)
-SMTP_HOST=
-SMTP_USER=
-SMTP_PASS=
+## Desarrollo
 
-# Monitoring
-SENTRY_DSN=
-```
+### ✅ Completado (Noviembre 2025)
 
-## Roadmap de Desarrollo
+1. [x] **Implementar estilos ESANT MARIA**
 
-### Fase 1: MVP Core (6-8 semanas)
+   - ✅ Actualizar paleta de colores en Tailwind
+   - ✅ Ajustar tipografías y espaciados
+   - ✅ Implementar nuevos componentes de botones
+   - ✅ Agregar footer con logo
+   - ✅ Actualizar 26 archivos con nuevas clases CSS
 
-**Semanas 1-2: Setup y Base**
-- [ ] Configuración repositorio monorepo
-- [ ] Setup frontend (React + Tailwind + Vite)
-- [ ] Setup backend (Express + Prisma + PostgreSQL)
-- [ ] Diseño de DB schema completo
-- [ ] Sistema de autenticación (JWT)
-- [ ] Layout base con navegación lateral y bottom nav
-- [ ] Componentes base (botones, inputs, cards)
+2. [x] **Componentes base del sistema de diseño**
 
-**Semanas 3-4: Módulos Core (Parte 1)**
-- [ ] Módulo Proyectos (CRUD básico, selección proyecto activo)
-- [ ] Módulo Visitas:
-  - [ ] Calendario visual con estados
-  - [ ] Crear/editar visita
-  - [ ] Agregar notas generales
-  - [ ] Agregar áreas y asuntos
-  - [ ] Historial de visitas
-- [ ] Módulo Pendientes:
-  - [ ] Vista por áreas (colapsable)
-  - [ ] Estados visuales (rojo/amarillo/verde)
-  - [ ] Crear/editar pendientes
-  - [ ] Filtro por encargado
+   - ✅ Button (primary, secondary, whatsapp, accent)
+   - ✅ Card (fondo blanco, sombras sutiles)
+   - ✅ Badge (count, notification, status)
+   - ✅ LoadingSpinner actualizado
+   - ✅ EmptyState actualizado
 
-**Semanas 5-6: Módulos Core (Parte 2) y Conexiones**
-- [ ] Conversión visita → pendientes (flow completo)
-- [ ] Módulo Equipo:
-  - [ ] Listado por categorías
-  - [ ] Contactos con WhatsApp
-  - [ ] Contador de pendientes
-- [ ] Módulo Documentos:
-  - [ ] Upload de archivos
-  - [ ] Categorización
-  - [ ] Listado y descarga
-- [ ] Módulo Notas:
-  - [ ] Crear nota rápida
-  - [ ] Historial
-  - [ ] Convertir a pendiente
-- [ ] Sistema de notificaciones in-app
+3. [x] **Actualización de branding**
+   - ✅ Nombre cambiado a "ESANT MARIA"
+   - ✅ Manifest.json para PWA creado
+   - ✅ Header con logo prominente
+   - ✅ Footer siempre visible
+   - ✅ Menú lateral estilo minimalista negro
 
-**Semanas 7-8: Presupuesto, Permisos y Polish**
-- [ ] Módulo Presupuesto:
-  - [ ] Resumen visual
-  - [ ] Desglose por categorías
-  - [ ] Planillas externas
-- [ ] Módulo Permisos:
-  - [ ] CRUD permisos
-  - [ ] Estados y alertas
-- [ ] PWA setup (manifest + service worker)
-- [ ] Optimización mobile
-- [ ] Testing básico
-- [ ] Deploy staging
-- [ ] Sesión de testing con cliente
+### Inmediato
 
-### Fase 2: Refinamiento y Features Avanzadas (3-4 semanas)
+1. [x] **Conectar módulos a Supabase**
+   - ✅ Visitas (conectado y funcionando)
+   - ✅ Pendientes (conectado y funcionando)
+   - ✅ Notificaciones (conectado y funcionando)
 
-- [ ] Mejoras UX basadas en feedback
-- [ ] Sistema de permisos granular
-- [ ] Notificaciones push (PWA)
-- [ ] Búsqueda global
-- [ ] Filtros avanzados en pendientes
-- [ ] Exportar reportes (PDF)
-- [ ] Multi-proyecto optimizado
-- [ ] WhatsApp Business API (evaluación)
-- [ ] Métricas y analytics
-- [ ] Testing comprehensivo
+### Sprint 1 (Próximas 2 Semanas)
 
-### Fase 3: Producción y Monitoreo (2 semanas)
+1. [x] **Módulo Visitas completo**
 
-- [ ] Optimización de performance
-- [ ] Load testing
-- [ ] Security audit
-- [ ] Documentación completa
-- [ ] Video tutorials para usuarios
-- [ ] Deploy producción
-- [ ] Monitoreo y alertas (Sentry)
-- [ ] Plan de soporte y mantenimiento
+   - ✅ CRUD de visitas (create, read, update, delete)
+   - ✅ CRUD de asuntos (add, update, delete)
+   - ✅ Conversión a pendientes
+   - ✅ Calendario visual actualizado con diseño ESANT MARIA
+   - ✅ Página de visitas con estilo minimalista
+   - ✅ Hooks de React Query implementados
+   - ✅ Integración completa con Supabase
 
-## Decisiones Técnicas y Pendientes
+2. [x] **Módulo Pendientes completo**
 
-### Decisiones tomadas con cliente:
+   - ✅ Gestión por áreas con colapsables
+   - ✅ Estados visuales (pausa, en obra, terminado)
+   - ✅ Cambio de estado con un clic
+   - ✅ Integración WhatsApp con datos reales del encargado
+   - ✅ CRUD completo (create, update, delete)
+   - ✅ Agrupación automática por áreas
+   - ✅ Estadísticas en header
+   - ✅ Diseño ESANT MARIA aplicado
+   - ✅ Hooks de React Query implementados
+   - ✅ Integración completa con Supabase
 
-1. **WhatsApp:** Links directos para MVP, API Business para fase 2
-2. **Presupuesto:** Planillas externas con notificaciones, no gestión integrada
-3. **Estados visuales:** Cuadrados de colores (más claro que círculos)
-4. **Flujo visitas:** Un solo botón convierte todos los asuntos en pendientes
-5. **Notificaciones:** Automáticas al asignar, sin confirmación adicional
-6. **Áreas:** Dinámicas por proyecto, no predefinidas
-7. **Calendario:** Mensual es suficiente, no necesita vista semanal
+3. [x] **Sistema de Notificaciones**
+   - ✅ Real-time con Supabase (subscripciones implementadas)
+   - ✅ Servicio de notificaciones completo
+   - ✅ Hooks de React Query implementados
+   - ✅ Centro de notificaciones con diseño ESANT MARIA
+   - ✅ Filtros (Todas / Sin leer)
+   - ✅ Marcar como leída individual o todas
+   - ✅ Eliminar notificaciones
+   - ✅ Navegación a acción vinculada
+   - ✅ Badge de contador en header y bottom nav
+   - ✅ Indicador visual de no leídas (borde rojo)
+   - ✅ Timestamps relativos (hace X minutos)
+   - ✅ Colores por tipo de notificación
+   - ⏳ Push notifications PWA (pendiente)
 
-### Por definir con cliente:
+### Sprint 2 (Semanas 3-4)
 
-- [ ] ¿Límite de usuarios por proyecto?
-- [ ] ¿Límite de proyectos simultáneos?
-- [ ] ¿Qué usuarios pueden ver el presupuesto completo?
-- [ ] ¿Necesitan fotos en las visitas? (subir directo desde móvil)
-- [ ] ¿Notificaciones por email además de in-app?
-- [ ] ¿Integraciones con Google Calendar para visitas?
-- [ ] ¿Sistema de comentarios en documentos?
-- [ ] ¿Versionado de planos/documentos?
+1. [x] **Módulo Equipo**
 
-### Decisiones técnicas pendientes:
+   - ✅ Directorio con contactos completo
+   - ✅ WhatsApp directo (también llamadas y email)
+   - ✅ Gestión de roles con colapsables
+   - ✅ Servicio de equipo con Supabase
+   - ✅ Hooks de React Query implementados
+   - ✅ Agrupación por roles con colores
+   - ✅ Estadísticas del equipo
+   - ✅ Eliminar miembros (solo admins/jefes)
+   - ✅ Diseño ESANT MARIA aplicado
+   - ✅ Indicador de usuario actual
+   - ✅ Permisos según rol de usuario
 
-- [ ] ¿Supabase vs Backend custom? → **Recomendación:** Backend custom por flexibilidad
-- [ ] ¿Monorepo vs repos separados? → **Recomendación:** Monorepo con turborepo
-- [ ] ¿Upload directo S3 vs through backend? → **Recomendación:** Through backend por control
-- [ ] ¿WebSockets para notificaciones real-time vs polling? → **Recomendación:** Polling para MVP, WebSockets fase 2
-- [ ] ¿React Query vs SWR? → **Recomendación:** React Query por features
-- [ ] ¿Zustand vs Context API? → **Recomendación:** Zustand por performance
+2. [x] **Módulo Documentos, Permisos y Notas (Feed Unificado)**
 
-## Aprendizajes del Cliente (Octubre 27, 2025)
+   **IMPORTANTE:** Los 3 módulos se consolidaron en un solo feed scrolleable tipo timeline
 
-### Feedback visual de maqueta:
+   **Documentos:**
+   - ✅ Upload con Supabase Storage (archivos hasta 10MB)
+   - ✅ Categorización completa (7 categorías)
+   - ✅ Visor de documentos (abrir en nueva pestaña)
+   - ✅ Upload múltiple de archivos
+   - ✅ Descargar y eliminar documentos
+   - ✅ Íconos por tipo de archivo
 
-**Lo que más valoró:**
-- Calendario muy visual y claro
-- Estados con colores obvios (no necesita explicación)
-- WhatsApp directo desde cada tarea
-- Un solo botón para convertir todo en pendientes
-- Presupuesto visual con barra de progreso
+   **Permisos:**
+   - ✅ Servicio y hooks completos
+   - ✅ CRUD completo de permisos
+   - ✅ Estados (pendiente, en trámite, aprobado, vencido)
+   - ✅ Tipos (edificación, municipal, recepción obra, otro)
+   - ✅ Cambio de estado inline
+   - ✅ Tracking de fechas de vencimiento
 
-**Ajustes solicitados:**
-- Los asuntos de visita deben poder tener múltiples tareas por área
-- Necesita ver historial de visitas para referencia
-- Contador de pendientes por persona es crítico
-- Notificaciones deben ser imposibles de ignorar (badge rojo)
-- Planillas Excel externas, no replicar en la app
+   **Notas:**
+   - ✅ Servicio y hooks completos
+   - ✅ CRUD completo de notas
+   - ✅ Notas con área opcional
+   - ✅ Diseño distintivo (fondo amarillo, borde izquierdo)
 
-**Prioridades confirmadas:**
-1. Flujo visita → pendientes debe ser perfecto
-2. WhatsApp debe funcionar sin fricciones
-3. Todo debe ser obvio sin capacitación
-4. Mobile first no es negociable
-5. Offline capability es fundamental
+   **Feed Unificado:**
+   - ✅ Timeline cronológico de todos los items
+   - ✅ Filtros: Todo, Documentos, Permisos, Notas
+   - ✅ Modal único para agregar cualquier tipo
+   - ✅ Diseño diferenciado por tipo de contenido
+   - ✅ Timestamps relativos ("hace X minutos")
+   - ✅ Actions específicas por tipo
+   - ✅ Diseño ESANT MARIA aplicado
+   - ✅ Navegación simplificada (de 8 a 6 items)
 
-### Casos de uso reales:
+### Sprint 3 (Semanas 5-6)
 
-**Lunes - Visita a obra:**
-```
-1. Llega a obra, abre app
-2. Crea visita del día
-3. Recorre obra y va agregando áreas
-4. Por cada área, anota asuntos/problemas
-5. Asigna encargados en terreno
-6. Al terminar, convierte todo en pendientes
-7. Cada encargado recibe notificación
-```
+1. [x] **Módulo Presupuesto**
 
-**Martes - Constructor revisa pendientes:**
-```
-1. Abre app, ve notificación roja
-2. Entra a Pendientes, ve sus 4 tareas
-3. Revisa detalles
-4. Cambia estado de una a "En obra"
-5. Necesita consultar algo, click en WhatsApp
-6. Conversa directamente con arquitecto
-```
+   - ✅ Servicio y hooks completos
+   - ✅ CRUD completo de items presupuestarios
+   - ✅ Agrupación por categorías (5 categorías)
+   - ✅ Tracking de gastos con progress bars
+   - ✅ Resumen financiero del proyecto
+   - ✅ Indicadores visuales de sobre presupuesto
+   - ✅ Monto estimado vs monto real
+   - ✅ Porcentaje de ejecución por item
+   - ✅ Totales y disponible
+   - ✅ Formato de moneda chilena (CLP)
+   - ✅ Diseño ESANT MARIA aplicado
+   - ⏳ Integración Excel (pendiente)
 
-**Viernes - Revisión de avances:**
-```
-1. Admin abre proyecto
-2. Ve resumen de pendientes por estado
-3. Revisa presupuesto ejecutado
-4. Verifica que permisos estén vigentes
-5. Programa próxima visita
-6. Sistema notifica al equipo
-```
+2. [x] **Módulo Permisos**
 
-## Referencias
+   - ✅ Integrado en el feed unificado de Docs
+   - ✅ Gestión completa de permisos
+   - ✅ Tracking de fechas de vencimiento
+   - ✅ Estados visuales (pendiente, en trámite, aprobado, vencido)
 
-- [Maqueta HTML v1](./traza-merged.html)
-- [Maqueta HTML v2 (actualizada)](./traza-v2.html)
-- [Diseños cliente PDF](./maqueta_Pipe.pdf)
-- [Propuesta Comercial](./propuesta-comercial.pdf)
-- [Minutas Reuniones](./minutas.md)
-- [One Pager](./one-pager.md)
+3. [x] **Optimizaciones**
+   - ✅ Service Worker configurado con Workbox
+   - ✅ PWA manifest actualizado con branding ESANT MARIA
+   - ✅ React Query persistence con IndexedDB
+   - ✅ Modo offline con cache strategies
+   - ✅ Network First para API calls de Supabase
+   - ✅ Cache First para Storage y assets
+   - ✅ Offline indicator component
+   - ✅ Code splitting con lazy loading
+   - ✅ Bundle optimization (chunks separados por vendor)
+   - ✅ Error Boundary global
+   - ✅ Loading states con Suspense
+   - ✅ Build optimizado (~682 KB precached, 69 KB gzipped main)
+   - ⏳ Testing E2E (pendiente)
 
-## Próximos Pasos
+### Entrega Beta (Semana 7)
 
-1. **Validar CLAUDE.md actualizado** con el equipo
-2. **Refinar schema de base de datos** con nuevas entidades
-3. **Crear wireframes de alta fidelidad** en Figma
-4. **Definir API contracts** detallados
-5. **Setup inicial del proyecto** (repositorio, CI/CD)
-6. **Primera reunión con constructor** para validar flujo
-7. **Sprint planning Fase 1**
+1. [ ] **Testing con usuario real**
+2. [ ] **Ajustes basados en feedback**
+3. [ ] **Documentación de usuario**
+4. [ ] **Deploy a producción**
 
 ---
 
-**Última actualización:** Octubre 27, 2025 - Post revisión diseños cliente  
-**Próxima revisión:** Setup proyecto (Semana 1 desarrollo)  
-**Status:** ✅ Especificación completa lista para desarrollo
+## Referencias del Sistema de Diseño
+
+- **Documento principal:** `esant-maria-design-system.md`
+- **Componentes implementados:** `client/src/components/common/`
+  - Button.tsx
+  - Card.tsx
+  - Badge.tsx
+- **Configuración Tailwind:** `client/tailwind.config.js`
+- **Estilos globales:** `client/src/index.css`
+- **Constantes de color:** `client/src/constants/index.ts`
+
+---
+
+**Última actualización:** Noviembre 6, 2025
+**Sistema de diseño implementado:** Noviembre 6, 2025
+**Próxima revisión:** Post-testing con usuario
