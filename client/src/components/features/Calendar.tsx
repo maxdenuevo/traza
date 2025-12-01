@@ -87,8 +87,8 @@ export const Calendar = ({ visitas = [], onDayClick, proximaVisita }: CalendarPr
 
       {/* Days of week */}
       <div className="grid grid-cols-7 gap-2 mb-3">
-        {DAYS_ES.map((day) => (
-          <div key={day} className="text-center text-sm text-esant-gray-600 py-2 font-medium">
+        {DAYS_ES.map((day, index) => (
+          <div key={index} className="text-center text-sm text-esant-gray-600 py-2 font-medium">
             {day}
           </div>
         ))}
@@ -107,8 +107,8 @@ export const Calendar = ({ visitas = [], onDayClick, proximaVisita }: CalendarPr
         ))}
       </div>
 
-      {/* Legend - Diseño minimalista */}
-      <div className="flex gap-6 mt-6 text-sm border-t border-esant-gray-200 pt-4">
+      {/* Legend - Responsive wrap for small screens */}
+      <div className="flex flex-wrap gap-x-4 gap-y-2 mt-6 text-sm border-t border-esant-gray-200 pt-4">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 bg-esant-green rounded-sm"></div>
           <span className="text-esant-gray-600">Realizada</span>

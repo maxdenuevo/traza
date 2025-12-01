@@ -20,6 +20,9 @@ const EquipoPage = lazy(() => import('./pages/Equipo').then(m => ({ default: m.E
 const DocumentosPage = lazy(() => import('./pages/Documentos').then(m => ({ default: m.DocumentosPage })));
 const PresupuestoPage = lazy(() => import('./pages/Presupuesto').then(m => ({ default: m.PresupuestoPage })));
 const NotificacionesPage = lazy(() => import('./pages/Notificaciones').then(m => ({ default: m.NotificacionesPage })));
+const CronogramaPage = lazy(() => import('./pages/Cronograma').then(m => ({ default: m.CronogramaPage })));
+const PermisosPage = lazy(() => import('./pages/Permisos').then(m => ({ default: m.PermisosPage })));
+const NotasPage = lazy(() => import('./pages/Notas').then(m => ({ default: m.NotasPage })));
 
 function AppContent() {
   const { user, isLoading, initialize } = useAuthStore();
@@ -75,6 +78,9 @@ function AppContent() {
                     <Route path="/equipo" element={<EquipoPage />} />
                     <Route path="/presupuesto" element={<PresupuestoPage />} />
                     <Route path="/notificaciones" element={<NotificacionesPage />} />
+                    <Route path="/cronograma" element={<CronogramaPage />} />
+                    <Route path="/permisos" element={<PermisosPage />} />
+                    <Route path="/notas" element={<NotasPage />} />
                   </Routes>
                 </Suspense>
               </Layout>

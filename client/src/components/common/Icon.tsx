@@ -33,8 +33,14 @@ import {
   Briefcase,
   Wrench,
   LogIn,
+  LogOut,
   UserPlus,
   LayoutGrid,
+  FileCheck,
+  Folder,
+  MessageSquare,
+  ListChecks,
+  MessageCircle,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -84,8 +90,16 @@ const iconMap: Record<string, LucideIcon> = {
   'briefcase': Briefcase,
   'wrench': Wrench,
   'log-in': LogIn,
+  'log-out': LogOut,
   'user-plus': UserPlus,
   'layout-grid': LayoutGrid,
+
+  // Additional icons for drawer/navigation
+  'file-check': FileCheck,
+  'folder': Folder,
+  'message-square': MessageSquare,
+  'message-circle': MessageCircle,
+  'list-checks': ListChecks,
 };
 
 interface IconProps {

@@ -1,7 +1,8 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from './Header';
-import { BottomNav } from './BottomNav';
+import { Drawer } from './Drawer';
+import { ProjectSelector } from '../ProjectSelector';
 import { useUnreadCount } from '../../hooks/useNotificaciones';
 
 interface LayoutProps {
@@ -15,23 +16,41 @@ export const Layout = ({
 }: LayoutProps) => {
   const navigate = useNavigate();
   const { data: unreadCount = 0 } = useUnreadCount();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [projectSelectorOpen, setProjectSelectorOpen] = useState(false);
+
+  const handleOpenDrawer = () => setDrawerOpen(true);
+  const handleCloseDrawer = () => setDrawerOpen(false);
+
+  const handleOpenProjectSelector = () => {
+    setProjectSelectorOpen(true);
+  };
 
   return (
-    <div className="min-h-screen bg-esant-gray-100">
+    <div className="min-h-screen bg-gray-100">
       <Header
         projectName={projectName}
         notificationCount={unreadCount}
+        onMenuClick={handleOpenDrawer}
         onNotificationClick={() => navigate('/notificaciones')}
       />
-      <main className="container mx-auto px-4 py-4 max-w-7xl pb-20 mb-safe">
+
+      <main className="container mx-auto px-4 py-4 max-w-7xl pb-8">
         {children}
       </main>
-      <BottomNav />
 
-      {/* Footer con nombre ESANT MARIA */}
-      <footer className="fixed bottom-16 left-0 right-0 text-center pb-2 pointer-events-none">
-        <p className="text-esant-gray-400 text-sm font-medium">ESANT MARIA</p>
-      </footer>
+      {/* Sidebar Drawer */}
+      <Drawer
+        isOpen={drawerOpen}
+        onClose={handleCloseDrawer}
+        onOpenProjectSelector={handleOpenProjectSelector}
+      />
+
+      {/* Project Selector Modal */}
+      <ProjectSelector
+        isOpen={projectSelectorOpen}
+        onClose={() => setProjectSelectorOpen(false)}
+      />
     </div>
   );
 };

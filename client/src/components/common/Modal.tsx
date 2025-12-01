@@ -31,11 +31,12 @@ export const Modal = ({
 
   if (!isOpen) return null;
 
+  // Mobile-first: full width on small screens, constrained on larger
   const sizeClasses = {
-    sm: 'max-w-md',
-    md: 'max-w-lg',
-    lg: 'max-w-2xl',
-    full: 'max-w-full mx-4'
+    sm: 'w-[calc(100vw-32px)] sm:max-w-md',
+    md: 'w-[calc(100vw-32px)] sm:max-w-lg',
+    lg: 'w-[calc(100vw-32px)] sm:max-w-2xl',
+    full: 'w-[calc(100vw-32px)]'
   };
 
   return (
@@ -47,13 +48,14 @@ export const Modal = ({
       />
 
       {/* Modal */}
-      <div className={`relative bg-white rounded-xl shadow-xl ${sizeClasses[size]} w-full max-h-[90vh] overflow-hidden flex flex-col`}>
+      <div className={`relative bg-white rounded-xl shadow-xl ${sizeClasses[size]} max-h-[90vh] overflow-hidden flex flex-col`}>
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold">{title}</h2>
+          <h2 className="text-lg font-semibold truncate pr-2">{title}</h2>
+          {/* 44px touch target */}
           <button
             onClick={onClose}
-            className="btn-touch p-2 hover:bg-gray-100 rounded-lg"
+            className="w-11 h-11 flex items-center justify-center hover:bg-gray-100 rounded-lg flex-shrink-0"
             aria-label="Cerrar"
           >
             <Icon name="x" size={20} />

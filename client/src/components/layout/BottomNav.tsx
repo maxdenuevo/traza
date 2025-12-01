@@ -34,7 +34,7 @@ export const BottomNav = () => {
               <div className="relative">
                 <Icon name={item.icon} size={22} strokeWidth={isActive ? 2.5 : 2} />
                 {showBadge && (
-                  <span className="absolute -top-1 -right-1 bg-esant-red text-esant-white text-xs font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">
+                  <span className="absolute -top-1.5 -right-1.5 bg-esant-red text-esant-white text-xs font-bold rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}

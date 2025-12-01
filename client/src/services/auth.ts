@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, isMockMode } from './supabase';
 import type { User, UserRole } from '../types';
 
 export interface SignUpData {
@@ -15,11 +15,38 @@ export interface SignInData {
   password: string;
 }
 
+// Mock user for development
+const MOCK_USER: User = {
+  id: 'mock-user-1',
+  email: 'demo@esantmaria.cl',
+  nombre: 'Felipe Larraín',
+  rol: 'admin',
+  telefono: '+56912345678',
+  especialidad: 'Arquitectura',
+  avatar: undefined,
+  proyectos: [],
+  createdAt: new Date(),
+  updatedAt: new Date(),
+};
+
 export const authService = {
   /**
    * Sign up a new user
    */
   async signUp(data: SignUpData): Promise<{ user: User; session: any }> {
+    if (isMockMode) {
+      // In mock mode, just return the mock user
+      const mockUser: User = {
+        ...MOCK_USER,
+        email: data.email,
+        nombre: data.nombre,
+        telefono: data.telefono,
+        rol: data.rol || 'especialista',
+        especialidad: data.especialidad,
+      };
+      return { user: mockUser, session: { mock: true } };
+    }
+
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
@@ -36,7 +63,6 @@ export const authService = {
     if (authError) throw authError;
     if (!authData.user) throw new Error('No user returned from signup');
 
-    // Get the full user profile
     const user = await this.getCurrentUser();
     if (!user) throw new Error('Failed to get user profile after signup');
 
@@ -47,6 +73,12 @@ export const authService = {
    * Sign in an existing user
    */
   async signIn(email: string, password: string): Promise<{ user: User; session: any }> {
+    if (isMockMode) {
+      // In mock mode, accept any credentials
+      console.log('🔶 Mock login - any credentials accepted');
+      return { user: MOCK_USER, session: { mock: true } };
+    }
+
     const { data: authData, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -55,7 +87,6 @@ export const authService = {
     if (error) throw error;
     if (!authData.user) throw new Error('No user returned from signin');
 
-    // Get the full user profile
     const user = await this.getCurrentUser();
     if (!user) throw new Error('Failed to get user profile after signin');
 
@@ -66,6 +97,9 @@ export const authService = {
    * Sign out the current user
    */
   async signOut() {
+    if (isMockMode) {
+      return; // Nothing to do in mock mode
+    }
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   },
@@ -74,6 +108,9 @@ export const authService = {
    * Get the current session
    */
   async getSession() {
+    if (isMockMode) {
+      return null; // No persistent session in mock mode
+    }
     const { data, error } = await supabase.auth.getSession();
     if (error) throw error;
     return data.session;
@@ -83,6 +120,10 @@ export const authService = {
    * Get the current user with profile data
    */
   async getCurrentUser(): Promise<User | null> {
+    if (isMockMode) {
+      return null; // Will be set after mock login
+    }
+
     const { data: { user: authUser } } = await supabase.auth.getUser();
 
     if (!authUser) return null;
@@ -95,7 +136,6 @@ export const authService = {
 
     if (error) throw error;
 
-    // Transform to match User type
     return {
       id: profile.id,
       email: profile.email,
@@ -104,7 +144,7 @@ export const authService = {
       telefono: profile.telefono,
       especialidad: profile.especialidad,
       avatar: profile.avatar,
-      proyectos: [], // Will be loaded separately
+      proyectos: [],
       createdAt: new Date(profile.created_at),
       updatedAt: new Date(profile.updated_at),
     };
@@ -114,6 +154,10 @@ export const authService = {
    * Update user profile
    */
   async updateProfile(userId: string, updates: Partial<User>) {
+    if (isMockMode) {
+      return { ...MOCK_USER, ...updates };
+    }
+
     const { data, error } = await supabase
       .from('profiles')
       .update({
@@ -134,6 +178,11 @@ export const authService = {
    * Subscribe to auth state changes
    */
   onAuthStateChange(callback: (user: User | null) => void) {
+    if (isMockMode) {
+      // No real auth state changes in mock mode
+      return { data: { subscription: { unsubscribe: () => {} } } };
+    }
+
     return supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         const user = await this.getCurrentUser();
@@ -148,6 +197,10 @@ export const authService = {
    * Reset password
    */
   async resetPassword(email: string) {
+    if (isMockMode) {
+      console.log('🔶 Mock password reset for:', email);
+      return;
+    }
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
@@ -158,9 +211,20 @@ export const authService = {
    * Update password
    */
   async updatePassword(newPassword: string) {
+    if (isMockMode) {
+      console.log('🔶 Mock password update');
+      return;
+    }
     const { error } = await supabase.auth.updateUser({
       password: newPassword,
     });
     if (error) throw error;
+  },
+
+  /**
+   * Get mock user (for mock mode only)
+   */
+  getMockUser(): User {
+    return MOCK_USER;
   },
 };

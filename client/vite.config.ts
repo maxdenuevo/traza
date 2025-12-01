@@ -33,9 +33,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'],
       manifest: {
-        name: 'ESANT MARIA - Gestión de Proyectos Arquitectónicos',
-        short_name: 'ESANT MARIA',
-        description: 'Plataforma mobile-first para gestión de proyectos de arquitectura',
+        name: 'Libro de Obra Digital',
+        short_name: 'Libro de Obra',
+        description: 'Gestión digital de proyectos de construcción',
         theme_color: '#1A1A1A',
         background_color: '#F0F0F0',
         display: 'standalone',

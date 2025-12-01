@@ -64,7 +64,7 @@ export const EquipoPage = () => {
       return;
     }
 
-    const mensaje = `Hola ${member.nombre}, te escribo desde ESANT MARIA`;
+    const mensaje = `Hola ${member.nombre}, te escribo desde Libro de Obra`;
     const url = generateWhatsAppLink(member.telefono, mensaje);
     window.open(url, '_blank');
   };
@@ -215,14 +215,14 @@ export const EquipoPage = () => {
                           </div>
                         </div>
 
-                        {/* Remove button */}
+                        {/* Remove button - 44px touch target */}
                         {canManageTeam && !isCurrentUser && (
                           <button
                             onClick={() => handleRemoveMember(member.id, member.nombre)}
-                            className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                            className="w-11 h-11 flex items-center justify-center hover:bg-red-50 rounded-lg transition-colors"
                             title="Eliminar del equipo"
                           >
-                            <Icon name="trash-2" size={16} className="text-esant-red" />
+                            <Icon name="trash-2" size={18} className="text-esant-red" />
                           </button>
                         )}
                       </div>
@@ -242,19 +242,19 @@ export const EquipoPage = () => {
                             </Button>
                             <button
                               onClick={() => handleCall(member)}
-                              className="px-3 py-2 bg-esant-gray-100 text-esant-gray-800 rounded-lg text-sm font-medium hover:bg-esant-gray-200 transition-colors flex items-center gap-1"
+                              className="w-11 h-11 bg-esant-gray-100 text-esant-gray-800 rounded-lg font-medium hover:bg-esant-gray-200 transition-colors flex items-center justify-center"
                               title="Llamar"
                             >
-                              <Icon name="phone" size={14} />
+                              <Icon name="phone" size={18} />
                             </button>
                           </>
                         )}
                         <button
                           onClick={() => handleEmail(member)}
-                          className="px-3 py-2 bg-esant-gray-100 text-esant-gray-800 rounded-lg text-sm font-medium hover:bg-esant-gray-200 transition-colors flex items-center gap-1"
+                          className="w-11 h-11 bg-esant-gray-100 text-esant-gray-800 rounded-lg font-medium hover:bg-esant-gray-200 transition-colors flex items-center justify-center"
                           title="Enviar email"
                         >
-                          <Icon name="mail" size={14} />
+                          <Icon name="mail" size={18} />
                         </button>
                       </div>
                     </div>

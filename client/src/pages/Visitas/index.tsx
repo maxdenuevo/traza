@@ -1,13 +1,20 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { Calendar } from '../../components/features/Calendar';
 import { VisitaForm } from '../../components/features/VisitaForm';
 import { AreaAsuntosList } from '../../components/features/AreaAsuntosList';
 import { VisitaHistorial } from '../../components/features/VisitaHistorial';
 import { Modal } from '../../components/common/Modal';
-import { Button } from '../../components/common/Button';
+import { Card } from '../../components/common/Card';
+import { Icon } from '../../components/common/Icon';
+import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+import { FAB } from '../../components/common/FAB';
 import { useProjectStore } from '../../store/useProjectStore';
 import { useAuthStore } from '../../store/useAuthStore';
+import { SECTORS } from '../../store/useCronogramaStore';
 import {
   useVisitas,
   useProximaVisita,
@@ -17,17 +24,21 @@ import {
   useDeleteAsunto,
   useConvertToPendientes
 } from '../../hooks/useVisitas';
+import { usePendientesByArea } from '../../hooks/usePendientes';
 import type { Visita, Asunto } from '../../types';
 
 export const VisitasPage = () => {
+  const navigate = useNavigate();
   const { currentProject } = useProjectStore();
   const { user } = useAuthStore();
   const [showNewVisitModal, setShowNewVisitModal] = useState(false);
   const [currentVisita, setCurrentVisita] = useState<Visita | null>(null);
+  const [showSectores, setShowSectores] = useState(true);
 
   // Fetch data from Supabase
   const { data: visitas = [], isLoading } = useVisitas(currentProject?.id || '');
   const { data: proximaVisita } = useProximaVisita(currentProject?.id || '');
+  const { data: pendientesByArea = [] } = usePendientesByArea(currentProject?.id || '');
 
   // Mutations
   const createMutation = useCreateVisita();
@@ -35,6 +46,12 @@ export const VisitasPage = () => {
   const addAsuntoMutation = useAddAsunto();
   const deleteAsuntoMutation = useDeleteAsunto();
   const convertMutation = useConvertToPendientes();
+
+  // Calculate pending counts per sector
+  const getPendingCount = (sector: string): number => {
+    const areaData = pendientesByArea.find((a: { area: string; pendientes: unknown[] }) => a.area === sector);
+    return areaData?.pendientes?.length || 0;
+  };
 
   // Group asuntos by area for current visit
   const areaAsuntos = currentVisita
@@ -77,10 +94,7 @@ export const VisitasPage = () => {
   };
 
   const handleAddArea = (_area: string) => {
-    if (!currentVisita) return;
-
     // Area is added implicitly when first asunto is added
-    // This just ensures we can expand it
   };
 
   const handleAddAsunto = async (area: string, asuntoData: Partial<Asunto>) => {
@@ -97,7 +111,6 @@ export const VisitasPage = () => {
         },
       });
 
-      // Update local state
       const updatedVisita = {
         ...currentVisita,
         asuntos: [...currentVisita.asuntos, newAsunto],
@@ -117,7 +130,6 @@ export const VisitasPage = () => {
     try {
       await deleteAsuntoMutation.mutateAsync(asuntoId);
 
-      // Update local state
       const updatedVisita = {
         ...currentVisita,
         asuntos: currentVisita.asuntos.filter(a => a.id !== asuntoId),
@@ -159,9 +171,7 @@ export const VisitasPage = () => {
     try {
       await updateMutation.mutateAsync({
         id: currentVisita.id,
-        updates: {
-          estado: 'completada',
-        },
+        updates: { estado: 'completada' },
       });
 
       setCurrentVisita(null);
@@ -175,42 +185,49 @@ export const VisitasPage = () => {
   const handleUpdateNotasGenerales = async (notas: string) => {
     if (!currentVisita) return;
 
-    // Update local state immediately for better UX
     setCurrentVisita({ ...currentVisita, notasGenerales: notas });
 
     try {
       await updateMutation.mutateAsync({
         id: currentVisita.id,
-        updates: {
-          notasGenerales: notas,
-        },
+        updates: { notasGenerales: notas },
       });
-    } catch (err) {
-      // Revert on error
+    } catch {
       toast.error('Error al guardar notas');
     }
   };
 
-  // Show loading state
+  const handleSectorClick = (sector: string) => {
+    navigate(`/pendientes?sector=${encodeURIComponent(sector)}`);
+  };
+
+  // Loading state
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-esant-gray-200 border-t-esant-black" />
+        <LoadingSpinner size="lg" />
       </div>
     );
   }
 
-  // Show message if no project selected
+  // No project selected
   if (!currentProject) {
     return (
       <div className="text-center py-12">
-        <p className="text-esant-gray-600">Selecciona un proyecto para ver las visitas</p>
+        <Icon name="calendar" size={48} className="text-gray-400 mx-auto mb-3" />
+        <p className="text-gray-600">Selecciona un proyecto para ver las visitas</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-20">
+      {/* Title - Libro de Obra */}
+      <Card className="p-6">
+        <h2 className="font-semibold text-xl text-gray-900 mb-1">Libro de Obra</h2>
+        <p className="text-sm text-gray-600">Gestión de visitas y sectores</p>
+      </Card>
+
       {/* Calendar */}
       <Calendar
         visitas={visitas}
@@ -218,37 +235,57 @@ export const VisitasPage = () => {
         onDayClick={(date) => console.log('Clicked day:', date)}
       />
 
-      {/* Nueva Visita Button */}
-      <Button
-        variant="primary"
-        fullWidth
-        onClick={() => setShowNewVisitModal(true)}
-      >
-        + Nueva Visita
-      </Button>
+      {/* Próxima Visita Card */}
+      {proximaVisita && (
+        <Card className="p-4">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-2 h-2 rounded-full bg-[#E53935]"></div>
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Próxima visita</span>
+          </div>
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="font-semibold text-gray-900">
+                {format(new Date(proximaVisita.fecha), "dd/MM/yy", { locale: es })}
+              </p>
+              <p className="text-sm text-gray-600">
+                {proximaVisita.hora || '10:30 am'}
+              </p>
+              <p className="text-sm text-gray-500">
+                {currentProject?.direccion || currentProject?.nombre}
+              </p>
+            </div>
+            <button
+              onClick={() => setCurrentVisita(proximaVisita)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <Icon name="chevron-right" size={20} className="text-gray-400" />
+            </button>
+          </div>
+        </Card>
+      )}
 
-      {/* Current Visit in Progress - Estilo ESANT MARIA */}
+      {/* Current Visit in Progress */}
       {currentVisita && currentVisita.estado === 'en_curso' && (
-        <div className="bg-esant-white rounded-xl shadow-esant p-6">
+        <Card className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="font-semibold text-xl text-esant-black">
-              Visita {new Date(currentVisita.fecha).toLocaleDateString('es-CL')}
+            <h3 className="font-semibold text-xl text-gray-900">
+              Visita {format(new Date(currentVisita.fecha), "dd/MM/yy", { locale: es })}
             </h3>
-            <span className="text-xs bg-esant-red text-esant-white px-3 py-1.5 rounded font-medium">
+            <span className="text-xs bg-[#E53935] text-white px-3 py-1.5 rounded font-medium">
               En curso
             </span>
           </div>
 
           <div className="space-y-6">
-            {/* Notas generales - Estilo minimalista */}
+            {/* Notas generales */}
             <div>
-              <label className="block text-sm font-medium text-esant-gray-600 mb-2">
+              <label className="block text-sm font-medium text-gray-600 mb-2">
                 Notas generales
               </label>
               <textarea
                 value={currentVisita.notasGenerales || ''}
                 onChange={(e) => handleUpdateNotasGenerales(e.target.value)}
-                className="w-full px-0 py-3 bg-transparent border-0 border-b-2 border-esant-gray-200 text-esant-black placeholder-esant-gray-400 focus:outline-none focus:border-esant-black transition-colors resize-none text-base"
+                className="w-full px-0 py-3 bg-transparent border-0 border-b-2 border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-900 transition-colors resize-none"
                 rows={3}
                 placeholder="Agregar observaciones generales de la visita..."
               />
@@ -267,16 +304,67 @@ export const VisitasPage = () => {
 
             {/* Complete without converting */}
             {currentVisita.asuntos.length === 0 && (
-              <Button variant="secondary" fullWidth onClick={handleCompleteVisita}>
+              <button
+                onClick={handleCompleteVisita}
+                className="w-full px-4 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+              >
                 Completar Visita
-              </Button>
+              </button>
             )}
           </div>
-        </div>
+        </Card>
       )}
 
+      {/* Sectores / Pendientes */}
+      <Card className="overflow-hidden">
+        <button
+          onClick={() => setShowSectores(!showSectores)}
+          className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+        >
+          <h3 className="font-semibold text-gray-900">Pendientes</h3>
+          <Icon
+            name={showSectores ? 'chevron-up' : 'chevron-down'}
+            size={20}
+            className="text-gray-400"
+          />
+        </button>
+
+        {showSectores && (
+          <div className="border-t border-gray-100">
+            {SECTORS.map((sector, index) => {
+              const count = getPendingCount(sector);
+              const isLast = index === SECTORS.length - 1;
+
+              return (
+                <button
+                  key={sector}
+                  onClick={() => handleSectorClick(sector)}
+                  className={`w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors ${
+                    !isLast ? 'border-b border-gray-100' : ''
+                  }`}
+                >
+                  <span className="text-gray-900">{sector}</span>
+                  {count > 0 ? (
+                    <span className="min-w-[24px] h-6 px-2 flex items-center justify-center bg-[#E53935] text-white text-xs font-bold rounded-full">
+                      {count}
+                    </span>
+                  ) : (
+                    <Icon name="chevron-right" size={16} className="text-gray-300" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </Card>
+
       {/* Visit History */}
-      <VisitaHistorial visitas={completedVisitas} />
+      {completedVisitas.length > 0 && (
+        <VisitaHistorial visitas={completedVisitas} />
+      )}
+
+      {/* FAB for new visit */}
+      <FAB onClick={() => setShowNewVisitModal(true)} />
 
       {/* New Visit Modal */}
       <Modal

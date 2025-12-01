@@ -1,11 +1,92 @@
-import { supabase } from './supabase';
+import { supabase, isMockMode } from './supabase';
 import type { Visita, Asunto } from '../types';
+
+// Mock visitas for development
+const today = new Date();
+const MOCK_VISITAS: Visita[] = [
+  {
+    id: 'mock-visita-1',
+    proyectoId: 'mock-project-1',
+    fecha: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 3),
+    hora: '10:00',
+    estado: 'programada',
+    notasGenerales: 'Revisión de avance en cocina y baño principal',
+    asuntos: [
+      {
+        id: 'mock-asunto-1',
+        visitaId: 'mock-visita-1',
+        area: 'Cocina',
+        descripcion: 'Revisar instalación de muebles',
+        encargadoId: 'mock-user-1',
+        notasAdicionales: 'Verificar medidas del mesón',
+        convertidoAPendiente: false,
+        createdAt: new Date(),
+      },
+    ],
+    creadoPor: 'mock-user-1',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'mock-visita-2',
+    proyectoId: 'mock-project-1',
+    fecha: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 5),
+    hora: '15:00',
+    estado: 'completada',
+    notasGenerales: 'Inspección de obra gruesa completada',
+    asuntos: [
+      {
+        id: 'mock-asunto-2',
+        visitaId: 'mock-visita-2',
+        area: 'General',
+        descripcion: 'Verificar estructura',
+        encargadoId: 'mock-user-1',
+        notasAdicionales: 'Todo en orden',
+        convertidoAPendiente: true,
+        pendienteId: 'mock-pendiente-1',
+        createdAt: new Date(),
+      },
+    ],
+    creadoPor: 'mock-user-1',
+    createdAt: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 10),
+    updatedAt: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 5),
+  },
+  {
+    id: 'mock-visita-3',
+    proyectoId: 'mock-project-1',
+    fecha: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 10),
+    hora: '09:30',
+    estado: 'programada',
+    notasGenerales: 'Reunión con proveedor de ventanas',
+    asuntos: [],
+    creadoPor: 'mock-user-1',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'mock-visita-4',
+    proyectoId: 'mock-project-1',
+    fecha: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 12),
+    hora: '11:00',
+    estado: 'completada',
+    notasGenerales: 'Primera visita de inspección',
+    asuntos: [],
+    creadoPor: 'mock-user-1',
+    createdAt: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 15),
+    updatedAt: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 12),
+  },
+];
 
 export const visitasService = {
   /**
    * Get all visitas for a project
    */
   async getAll(proyectoId: string): Promise<Visita[]> {
+    if (isMockMode) {
+      console.log('🔶 Mock: Returning mock visitas');
+      return MOCK_VISITAS.filter(v => v.proyectoId === proyectoId);
+    }
+
     const { data, error } = await supabase
       .from('visitas')
       .select(`
@@ -45,6 +126,12 @@ export const visitasService = {
    * Get a single visita by ID
    */
   async getById(id: string): Promise<Visita> {
+    if (isMockMode) {
+      const visita = MOCK_VISITAS.find(v => v.id === id);
+      if (!visita) throw new Error('Visita not found');
+      return visita;
+    }
+
     const { data, error } = await supabase
       .from('visitas')
       .select(`
@@ -84,6 +171,23 @@ export const visitasService = {
    * Create a new visita
    */
   async create(visita: Partial<Visita>, userId: string) {
+    if (isMockMode) {
+      const newVisita: Visita = {
+        id: `mock-visita-${Date.now()}`,
+        proyectoId: visita.proyectoId || 'mock-project-1',
+        fecha: visita.fecha || new Date(),
+        hora: visita.hora || '10:00',
+        estado: visita.estado || 'programada',
+        notasGenerales: visita.notasGenerales,
+        asuntos: [],
+        creadoPor: userId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      MOCK_VISITAS.unshift(newVisita);
+      return newVisita;
+    }
+
     const { data, error } = await supabase
       .from('visitas')
       .insert({
@@ -137,6 +241,14 @@ export const visitasService = {
    * Get next scheduled visita for a project
    */
   async getProxima(proyectoId: string): Promise<Visita | null> {
+    if (isMockMode) {
+      const now = new Date();
+      const proxima = MOCK_VISITAS
+        .filter(v => v.proyectoId === proyectoId && v.estado === 'programada' && v.fecha > now)
+        .sort((a, b) => a.fecha.getTime() - b.fecha.getTime())[0];
+      return proxima || null;
+    }
+
     const { data, error } = await supabase
       .from('visitas')
       .select('*')

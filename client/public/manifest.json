@@ -1,12 +1,12 @@
 {
-  "name": "ESANT MARIA - Gestión de Proyectos Arquitectónicos",
-  "short_name": "ESANT MARIA",
+  "name": "Libro de Obra Digital",
+  "short_name": "Libro de Obra",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "theme_color": "#000000",
+  "theme_color": "#1A1A1A",
   "background_color": "#F5F5F5",
-  "description": "Plataforma mobile-first para gestión de proyectos de arquitectura",
+  "description": "Gestión digital de proyectos de construcción",
   "icons": [
     {
       "src": "/icon-192.png",

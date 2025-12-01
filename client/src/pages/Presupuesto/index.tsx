@@ -157,15 +157,15 @@ export const PresupuestoPage = () => {
           <p className="text-sm text-esant-gray-600 mb-4">Estado financiero del proyecto</p>
 
           <div className="space-y-4">
-            {/* Total amounts */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* Total amounts - stack on mobile */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <p className="text-xs text-esant-gray-600 mb-1">Presupuesto Total</p>
-                <p className="text-2xl font-bold text-esant-black">{formatCurrency(summary.totalEstimado)}</p>
+                <p className="text-xl sm:text-2xl font-bold text-esant-black">{formatCurrency(summary.totalEstimado)}</p>
               </div>
               <div>
                 <p className="text-xs text-esant-gray-600 mb-1">Total Gastado</p>
-                <p className="text-2xl font-bold text-esant-red">{formatCurrency(summary.totalGastado)}</p>
+                <p className="text-xl sm:text-2xl font-bold text-esant-red">{formatCurrency(summary.totalGastado)}</p>
               </div>
             </div>
 
@@ -279,7 +279,7 @@ export const PresupuestoPage = () => {
                             <h4 className="font-medium text-base text-esant-black mb-2">
                               {item.descripcion}
                             </h4>
-                            <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
                               <div>
                                 <p className="text-xs text-esant-gray-600">Estimado</p>
                                 <p className="font-semibold text-esant-black">
@@ -374,7 +374,7 @@ export const PresupuestoPage = () => {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-esant-gray-600 mb-2">Monto Estimado</label>
               <input

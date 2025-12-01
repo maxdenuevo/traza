@@ -1,20 +1,55 @@
-import { supabase } from './supabase';
+import { supabase, isMockMode } from './supabase';
 import type { Proyecto, ProyectoListItem } from '../types';
 
+// Mock projects for development
+const MOCK_PROJECTS: ProyectoListItem[] = [
+  {
+    id: 'mock-project-1',
+    nombre: 'AGUA DEL PALO',
+    cliente: 'Familia González',
+    estado: 'en_obra',
+    fechaInicio: new Date('2025-01-15'),
+    fechaEstimadaFin: new Date('2025-06-30'),
+    direccion: 'Av. Las Condes 1234, Santiago',
+    descripcion: 'Remodelación completa de casa de 250m2',
+    presupuestoTotal: 85000000,
+    usuarios: [],
+    createdAt: new Date('2025-01-01'),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'mock-project-2',
+    nombre: 'SANTA MARIA',
+    cliente: 'Inmobiliaria Santa María',
+    estado: 'planificacion',
+    fechaInicio: new Date('2025-03-01'),
+    fechaEstimadaFin: new Date('2025-12-31'),
+    direccion: 'Camino El Alba 456, Lo Barnechea',
+    descripcion: 'Construcción de edificio residencial de 4 pisos',
+    presupuestoTotal: 450000000,
+    usuarios: [],
+    createdAt: new Date('2025-02-15'),
+    updatedAt: new Date(),
+  },
+];
+
+const MOCK_FULL_PROJECT: Proyecto = {
+  ...MOCK_PROJECTS[0],
+  usuarios: [],
+  visitas: [],
+  pendientes: [],
+  documentos: [],
+  notas: [],
+  presupuestoItems: [],
+};
+
 export const proyectosService = {
-  /**
-   * Get all projects for the current user
-   *
-   * Returns lightweight project list items optimized for list views.
-   * Only includes basic project info and team members.
-   *
-   * @returns ProyectoListItem[] - Projects without full relationship data
-   *
-   * **Note:** For complete project data including visitas, pendientes, documentos, etc.,
-   * use `getById()` instead. This method is optimized for performance by not fetching
-   * large relationship arrays that aren't needed in list views.
-   */
   async getAll(): Promise<ProyectoListItem[]> {
+    if (isMockMode) {
+      console.log('🔶 Mock: Returning mock projects');
+      return MOCK_PROJECTS;
+    }
+
     const { data, error } = await supabase
       .from('proyectos')
       .select(`
@@ -43,19 +78,13 @@ export const proyectosService = {
     }));
   },
 
-  /**
-   * Get a single project by ID with all relationships
-   *
-   * Returns complete project data including all visitas, pendientes, documentos,
-   * notas, and presupuestoItems.
-   *
-   * @param id - Project ID
-   * @returns Proyecto - Full project with all relationships loaded
-   *
-   * **Note:** This method fetches significantly more data than `getAll()`.
-   * Use this only when you need the complete project data.
-   */
   async getById(id: string): Promise<Proyecto> {
+    if (isMockMode) {
+      const project = MOCK_PROJECTS.find(p => p.id === id);
+      if (!project) throw new Error('Project not found');
+      return { ...MOCK_FULL_PROJECT, ...project };
+    }
+
     const { data, error } = await supabase
       .from('proyectos')
       .select(`
@@ -95,15 +124,34 @@ export const proyectosService = {
     };
   },
 
-  /**
-   * Create a new project and automatically assign current user
-   */
   async create(proyecto: Partial<Proyecto>): Promise<Proyecto> {
-    // Get current user
+    if (isMockMode) {
+      const newProject: Proyecto = {
+        id: `mock-project-${Date.now()}`,
+        nombre: proyecto.nombre || 'Nuevo Proyecto',
+        cliente: proyecto.cliente || '',
+        estado: proyecto.estado || 'planificacion',
+        fechaInicio: proyecto.fechaInicio || new Date(),
+        fechaEstimadaFin: proyecto.fechaEstimadaFin,
+        direccion: proyecto.direccion,
+        descripcion: proyecto.descripcion,
+        presupuestoTotal: proyecto.presupuestoTotal || 0,
+        usuarios: [],
+        visitas: [],
+        pendientes: [],
+        documentos: [],
+        notas: [],
+        presupuestoItems: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      MOCK_PROJECTS.unshift(newProject);
+      return newProject;
+    }
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('No authenticated user');
 
-    // Create project
     const { data: newProject, error: projectError } = await supabase
       .from('proyectos')
       .insert({
@@ -121,7 +169,6 @@ export const proyectosService = {
 
     if (projectError) throw projectError;
 
-    // Assign current user to project
     const { error: assignError } = await supabase
       .from('proyecto_usuarios')
       .insert({
@@ -131,7 +178,6 @@ export const proyectosService = {
 
     if (assignError) throw assignError;
 
-    // Return formatted project
     return {
       id: newProject.id,
       nombre: newProject.nombre,
@@ -153,10 +199,16 @@ export const proyectosService = {
     };
   },
 
-  /**
-   * Update a project
-   */
   async update(id: string, updates: Partial<Proyecto>) {
+    if (isMockMode) {
+      const idx = MOCK_PROJECTS.findIndex(p => p.id === id);
+      if (idx >= 0) {
+        MOCK_PROJECTS[idx] = { ...MOCK_PROJECTS[idx], ...updates, updatedAt: new Date() };
+        return MOCK_PROJECTS[idx];
+      }
+      return null;
+    }
+
     const { data, error } = await supabase
       .from('proyectos')
       .update({
@@ -176,10 +228,13 @@ export const proyectosService = {
     return data;
   },
 
-  /**
-   * Delete a project
-   */
   async delete(id: string) {
+    if (isMockMode) {
+      const idx = MOCK_PROJECTS.findIndex(p => p.id === id);
+      if (idx >= 0) MOCK_PROJECTS.splice(idx, 1);
+      return;
+    }
+
     const { error } = await supabase
       .from('proyectos')
       .delete()
@@ -188,10 +243,9 @@ export const proyectosService = {
     if (error) throw error;
   },
 
-  /**
-   * Add a user to a project
-   */
   async addUser(proyectoId: string, userId: string) {
+    if (isMockMode) return;
+
     const { error } = await supabase
       .from('proyecto_usuarios')
       .insert({
@@ -202,10 +256,9 @@ export const proyectosService = {
     if (error) throw error;
   },
 
-  /**
-   * Remove a user from a project
-   */
   async removeUser(proyectoId: string, userId: string) {
+    if (isMockMode) return;
+
     const { error } = await supabase
       .from('proyecto_usuarios')
       .delete()
@@ -215,10 +268,16 @@ export const proyectosService = {
     if (error) throw error;
   },
 
-  /**
-   * Get project summary for dashboard
-   */
   async getSummary(id: string) {
+    if (isMockMode) {
+      return {
+        id,
+        pendientes: { count: 5 },
+        visitas: { count: 3 },
+        documentos: { count: 8 },
+      };
+    }
+
     const { data, error } = await supabase
       .from('proyectos')
       .select(`

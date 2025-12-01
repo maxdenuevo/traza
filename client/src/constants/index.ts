@@ -103,11 +103,11 @@ export const NOTIFICACION_TIPO_COLORS: Record<string, StatusColor> = {
 
 export const NAV_ITEMS = [
   { id: 'visitas', label: 'Visitas', icon: 'calendar' },
-  { id: 'pendientes', label: 'Pendientes', icon: 'clipboard-list' },
+  { id: 'pendientes', label: 'Tareas', icon: 'clipboard-list' },
   { id: 'documentos', label: 'Docs', icon: 'file-text' },
   { id: 'equipo', label: 'Equipo', icon: 'users' },
-  { id: 'presupuesto', label: 'Presupuesto', icon: 'wallet' },
-  { id: 'notificaciones', label: 'Notifs', icon: 'bell' },
+  { id: 'presupuesto', label: 'Gastos', icon: 'wallet' },
+  { id: 'notificaciones', label: 'Alertas', icon: 'bell' },
 ];
 
 // ==================== WhatsApp ====================
