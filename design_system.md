@@ -42,13 +42,13 @@ Estética **funcional y profesional** orientada al sector construcción. Prioriz
 :root {
   /* Estados */
   --color-success: #4CAF50;      /* Verde - Listo */
-  --color-warning: #FFC107;      /* Amarillo - Pausado */
+  --color-warning: #9E9E9E;      /* Gris - Pausado */
   --color-error: #E53935;        /* Rojo - Urgente/En obra */
   --color-info: #2196F3;
-  
+
   /* Badges de estado */
   --badge-listo: #4CAF50;
-  --badge-pausado: #FFC107;
+  --badge-pausado: #9E9E9E;      /* Gris - indica detenido/en espera */
   --badge-en-obra: #E53935;
 }
 ```
@@ -268,7 +268,7 @@ Estética **funcional y profesional** orientada al sector construcción. Prioriz
 }
 
 .badge-listo { background: var(--badge-listo); color: white; }
-.badge-pausado { background: var(--badge-pausado); color: black; }
+.badge-pausado { background: var(--badge-pausado); color: white; }  /* Gris */
 .badge-en-obra { background: var(--badge-en-obra); color: white; }
 ```
 
@@ -292,6 +292,44 @@ Estética **funcional y profesional** orientada al sector construcción. Prioriz
 - Día con visita: círculo rojo outline
 - Próxima visita: punto rojo debajo
 
+### Tabs de Filtro (Pendientes)
+
+```
+┌─────────────────────────────────────┐
+│ [Por Sector]  │  Por Responsable    │
+└─────────────────────────────────────┘
+```
+
+```css
+.tabs-container {
+  display: flex;
+  background: var(--color-gray-100);
+  border-radius: var(--radius-md);
+  padding: 4px;
+}
+
+.tab {
+  flex: 1;
+  padding: 8px 16px;
+  text-align: center;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--color-gray-600);
+  border-radius: var(--radius-md);
+  transition: var(--transition-fast);
+}
+
+.tab-active {
+  background: white;
+  color: var(--color-gray-900);
+  box-shadow: var(--shadow-sm);
+}
+```
+
+- Dos opciones: "Por Sector" | "Por Responsable"
+- Tab activo: fondo blanco con sombra sutil
+- Tab inactivo: transparente, texto gris
+
 ### Lista de Sectores
 
 ```
@@ -309,6 +347,21 @@ Estética **funcional y profesional** orientada al sector construcción. Prioriz
 - Sector con pendientes: badge numérico rojo
 - Sector activo: fondo gray-100
 - Chevron para expandir/colapsar
+
+### Lista por Responsable
+
+```
+┌─────────────────────────────────────┐
+│ 👤 David                        4   │
+├─────────────────────────────────────┤
+│ 👤 Mateo                        2   │
+│ 👤 Pedro                        1   │
+└─────────────────────────────────────┘
+```
+
+- Nombre del responsable con avatar/icono
+- Badge numérico con cantidad de pendientes
+- Tap expande para ver tareas asignadas
 
 ### Notificaciones
 
@@ -374,8 +427,9 @@ Usar **Lucide Icons** o **Heroicons** (outline style).
    └── Acciones (Nueva nota, Notificar)
 
 3. Pendientes
-   ├── Por sector
-   └── Por responsable
+   ├── Toggle/Tabs: "Por Sector" | "Por Responsable"
+   ├── Vista Por Sector: lista sectores con conteo
+   └── Vista Por Responsable: lista personas con sus tareas
 
 4. Notas Equipo
    ├── General

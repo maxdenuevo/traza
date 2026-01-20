@@ -67,6 +67,31 @@ export const pendientesService = {
   },
 
   /**
+   * Get pendientes grouped by responsable (encargado)
+   */
+  async getByResponsable(proyectoId: string) {
+    const pendientes = await this.getAll(proyectoId);
+
+    const grouped = pendientes.reduce((acc, pendiente) => {
+      const encargadoId = pendiente.encargadoId || 'sin-asignar';
+      const encargadoNombre = pendiente.encargado?.nombre || 'Sin asignar';
+
+      if (!acc[encargadoId]) {
+        acc[encargadoId] = {
+          encargadoId,
+          encargadoNombre,
+          encargado: pendiente.encargado,
+          pendientes: [],
+        };
+      }
+      acc[encargadoId].pendientes.push(pendiente);
+      return acc;
+    }, {} as Record<string, { encargadoId: string; encargadoNombre: string; encargado?: Pendiente['encargado']; pendientes: Pendiente[] }>);
+
+    return Object.values(grouped);
+  },
+
+  /**
    * Get pendientes for a specific user
    */
   async getByUser(userId: string): Promise<Pendiente[]> {

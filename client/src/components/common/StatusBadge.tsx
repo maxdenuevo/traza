@@ -14,8 +14,8 @@ const STATUS_CONFIG: Record<CronogramaStatus, { label: string; bg: string; text:
   },
   pausado: {
     label: 'Pausado',
-    bg: 'bg-[#FFC107]',
-    text: 'text-black',
+    bg: 'bg-[#9E9E9E]',
+    text: 'text-white',
   },
   en_obra: {
     label: 'En obra',

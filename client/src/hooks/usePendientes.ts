@@ -26,6 +26,14 @@ export const usePendientesByUser = (userId: string) => {
   });
 };
 
+export const usePendientesByResponsable = (proyectoId: string) => {
+  return useQuery({
+    queryKey: ['pendientes', 'by-responsable', proyectoId],
+    queryFn: () => pendientesService.getByResponsable(proyectoId),
+    enabled: !!proyectoId,
+  });
+};
+
 export const usePendiente = (id: string) => {
   return useQuery({
     queryKey: ['pendientes', 'detail', id],
