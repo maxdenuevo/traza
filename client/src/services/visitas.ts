@@ -1,13 +1,12 @@
 import { supabase, isMockMode } from './supabase';
 import type { Visita, Asunto } from '../types';
 
-// Mock visitas for development
-const today = new Date();
+// Mock visitas for development - Fixed dates for January 2026 demo
 const MOCK_VISITAS: Visita[] = [
   {
     id: 'mock-visita-1',
     proyectoId: 'mock-project-1',
-    fecha: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 3),
+    fecha: new Date('2026-01-23'),
     hora: '10:00',
     estado: 'programada',
     notasGenerales: 'Revisión de avance en cocina y baño principal',
@@ -20,17 +19,17 @@ const MOCK_VISITAS: Visita[] = [
         encargadoId: 'mock-user-1',
         notasAdicionales: 'Verificar medidas del mesón',
         convertidoAPendiente: false,
-        createdAt: new Date(),
+        createdAt: new Date('2026-01-20'),
       },
     ],
     creadoPor: 'mock-user-1',
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createdAt: new Date('2026-01-20'),
+    updatedAt: new Date('2026-01-20'),
   },
   {
     id: 'mock-visita-2',
     proyectoId: 'mock-project-1',
-    fecha: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 5),
+    fecha: new Date('2026-01-15'),
     hora: '15:00',
     estado: 'completada',
     notasGenerales: 'Inspección de obra gruesa completada',
@@ -44,36 +43,36 @@ const MOCK_VISITAS: Visita[] = [
         notasAdicionales: 'Todo en orden',
         convertidoAPendiente: true,
         pendienteId: 'mock-pendiente-1',
-        createdAt: new Date(),
+        createdAt: new Date('2026-01-10'),
       },
     ],
     creadoPor: 'mock-user-1',
-    createdAt: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 10),
-    updatedAt: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 5),
+    createdAt: new Date('2026-01-10'),
+    updatedAt: new Date('2026-01-15'),
   },
   {
     id: 'mock-visita-3',
     proyectoId: 'mock-project-1',
-    fecha: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 10),
+    fecha: new Date('2026-01-30'),
     hora: '09:30',
     estado: 'programada',
     notasGenerales: 'Reunión con proveedor de ventanas',
     asuntos: [],
     creadoPor: 'mock-user-1',
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createdAt: new Date('2026-01-20'),
+    updatedAt: new Date('2026-01-20'),
   },
   {
     id: 'mock-visita-4',
     proyectoId: 'mock-project-1',
-    fecha: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 12),
+    fecha: new Date('2026-01-08'),
     hora: '11:00',
     estado: 'completada',
     notasGenerales: 'Primera visita de inspección',
     asuntos: [],
     creadoPor: 'mock-user-1',
-    createdAt: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 15),
-    updatedAt: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 12),
+    createdAt: new Date('2026-01-05'),
+    updatedAt: new Date('2026-01-08'),
   },
 ];
 
