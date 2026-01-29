@@ -63,8 +63,26 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,woff,woff2}'],
+        // Don't precache JS files - let them be fetched fresh on each load
+        // This prevents chunk loading errors after deployments
+        globPatterns: ['**/*.{css,html,ico,png,svg,jpg,jpeg,woff,woff2}'],
+        // Skip waiting to activate new service worker immediately
+        skipWaiting: true,
+        clientsClaim: true,
         runtimeCaching: [
+          {
+            // JS files - Network First to always get fresh chunks
+            urlPattern: /\.js$/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'js-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24, // 1 day
+              },
+              networkTimeoutSeconds: 5,
+            },
+          },
           {
             // Supabase API calls - Network First strategy
             urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/.*/i,
