@@ -64,7 +64,7 @@ export const EquipoPage = () => {
       return;
     }
 
-    const mensaje = `Hola ${member.nombre}, te escribo desde Libro de Obra`;
+    const mensaje = `Hola ${member.nombre}, te escribo desde ESANT MARIA`;
     const url = generateWhatsAppLink(member.telefono, mensaje);
     window.open(url, '_blank');
   };

@@ -51,8 +51,8 @@ export default function Login() {
 
         {/* Logo/Header */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Libro de Obra</h1>
-          <p className="text-gray-600 text-base">Gestión Digital de Construcción</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">ESANT MARIA</h1>
+          <p className="text-gray-600 text-base">Libro de Obra Digital</p>
         </div>
 
         {/* Login Card */}
@@ -132,7 +132,7 @@ export default function Login() {
 
         {/* Footer */}
         <p className="text-center text-gray-400 text-sm mt-8">
-          Libro de Obra Digital
+          ESANT MARIA - Gestión de Construcción
         </p>
       </div>
     </div>

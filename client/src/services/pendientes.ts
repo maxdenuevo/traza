@@ -192,19 +192,21 @@ export const pendientesService = {
    * Update a pendiente
    */
   async update(id: string, updates: Partial<Pendiente>) {
-    const updateData: any = {
-      area: updates.area,
-      tarea: updates.tarea,
-      descripcion: updates.descripcion,
-      encargado_id: updates.encargadoId,
-      estado: updates.estado,
-      prioridad: updates.prioridad,
-      fecha_vencimiento: updates.fechaVencimiento,
-      notas_adicionales: updates.notasAdicionales,
-    };
+    const updateData: any = {};
+
+    // Only include fields that are defined
+    if (updates.area !== undefined) updateData.area = updates.area;
+    if (updates.tarea !== undefined) updateData.tarea = updates.tarea;
+    if (updates.descripcion !== undefined) updateData.descripcion = updates.descripcion;
+    if (updates.encargadoId !== undefined) updateData.encargado_id = updates.encargadoId;
+    if (updates.estado !== undefined) updateData.estado = updates.estado;
+    if (updates.prioridad !== undefined) updateData.prioridad = updates.prioridad;
+    if (updates.fechaVencimiento !== undefined) updateData.fecha_vencimiento = updates.fechaVencimiento;
+    if (updates.notasAdicionales !== undefined) updateData.notas_adicionales = updates.notasAdicionales;
+    if (updates.attachments !== undefined) updateData.attachments = updates.attachments;
 
     // If marking as completed, set fecha_completado
-    if (updates.estado === 'terminado') {
+    if (updates.estado === 'completada') {
       updateData.fecha_completado = new Date().toISOString();
     }
 
@@ -226,7 +228,7 @@ export const pendientesService = {
     const updateData: any = { estado };
 
     // If marking as completed, set fecha_completado
-    if (estado === 'terminado') {
+    if (estado === 'completada') {
       updateData.fecha_completado = new Date().toISOString();
     }
 
@@ -261,7 +263,7 @@ export const pendientesService = {
       .from('pendientes')
       .select('*', { count: 'exact', head: true })
       .eq('encargado_id', userId)
-      .in('estado', ['pausa', 'en_obra']);
+      .in('estado', ['creada', 'en_progreso', 'pausada']);
 
     if (error) throw error;
     return count || 0;
@@ -280,11 +282,74 @@ export const pendientesService = {
 
     const stats = {
       total: data.length,
-      pausa: data.filter((p) => p.estado === 'pausa').length,
-      en_obra: data.filter((p) => p.estado === 'en_obra').length,
-      terminado: data.filter((p) => p.estado === 'terminado').length,
+      creada: data.filter((p) => p.estado === 'creada').length,
+      en_progreso: data.filter((p) => p.estado === 'en_progreso').length,
+      pausada: data.filter((p) => p.estado === 'pausada').length,
+      completada: data.filter((p) => p.estado === 'completada').length,
+      cancelada: data.filter((p) => p.estado === 'cancelada').length,
     };
 
     return stats;
+  },
+
+  /**
+   * Pause a pendiente with optional motivo
+   */
+  async pause(id: string, motivo: string | undefined, userId: string) {
+    // Update estado to pausada
+    const { error: updateError } = await supabase
+      .from('pendientes')
+      .update({ estado: 'pausada' })
+      .eq('id', id);
+
+    if (updateError) throw updateError;
+
+    // Create pause log
+    const { error: logError } = await supabase
+      .from('pause_logs')
+      .insert({
+        pendiente_id: id,
+        paused_at: new Date().toISOString(),
+        motivo,
+        paused_by: userId,
+      });
+
+    if (logError) {
+      console.warn('Error creating pause log:', logError);
+      // Don't throw, the pause itself succeeded
+    }
+
+    return { success: true };
+  },
+
+  /**
+   * Resume a paused pendiente
+   */
+  async resume(id: string, _userId: string) {
+    // Update estado to en_progreso
+    const { error: updateError } = await supabase
+      .from('pendientes')
+      .update({ estado: 'en_progreso' })
+      .eq('id', id);
+
+    if (updateError) throw updateError;
+
+    // Update the latest pause log with resumed_at
+    const { data: logs } = await supabase
+      .from('pause_logs')
+      .select('id')
+      .eq('pendiente_id', id)
+      .is('resumed_at', null)
+      .order('paused_at', { ascending: false })
+      .limit(1);
+
+    if (logs && logs.length > 0) {
+      await supabase
+        .from('pause_logs')
+        .update({ resumed_at: new Date().toISOString() })
+        .eq('id', logs[0].id);
+    }
+
+    return { success: true };
   },
 };

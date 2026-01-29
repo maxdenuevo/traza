@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { Layout } from './components/layout/Layout';
-import { ProtectedRoute } from './components/ProtectedRoute';
+import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { OfflineIndicator } from './components/common/OfflineIndicator';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { queryClient } from './services/queryClient';
@@ -20,9 +20,12 @@ const EquipoPage = lazy(() => import('./pages/Equipo').then(m => ({ default: m.E
 const DocumentosPage = lazy(() => import('./pages/Documentos').then(m => ({ default: m.DocumentosPage })));
 const PresupuestoPage = lazy(() => import('./pages/Presupuesto').then(m => ({ default: m.PresupuestoPage })));
 const NotificacionesPage = lazy(() => import('./pages/Notificaciones').then(m => ({ default: m.NotificacionesPage })));
-const CronogramaPage = lazy(() => import('./pages/Cronograma').then(m => ({ default: m.CronogramaPage })));
+const ProgramaPage = lazy(() => import('./pages/Programa').then(m => ({ default: m.ProgramaPage })));
 const PermisosPage = lazy(() => import('./pages/Permisos').then(m => ({ default: m.PermisosPage })));
-const NotasPage = lazy(() => import('./pages/Notas').then(m => ({ default: m.NotasPage })));
+const MaterialesPage = lazy(() => import('./pages/Materiales').then(m => ({ default: m.MaterialesPage })));
+const SeguimientoPage = lazy(() => import('./pages/Seguimiento').then(m => ({ default: m.SeguimientoPage })));
+const FacturasPage = lazy(() => import('./pages/Facturas').then(m => ({ default: m.FacturasPage })));
+const InformesPage = lazy(() => import('./pages/Informes').then(m => ({ default: m.InformesPage })));
 
 function AppContent() {
   const { user, isLoading, initialize } = useAuthStore();
@@ -78,9 +81,12 @@ function AppContent() {
                     <Route path="/equipo" element={<EquipoPage />} />
                     <Route path="/presupuesto" element={<PresupuestoPage />} />
                     <Route path="/notificaciones" element={<NotificacionesPage />} />
-                    <Route path="/cronograma" element={<CronogramaPage />} />
+                    <Route path="/programa" element={<ProgramaPage />} />
                     <Route path="/permisos" element={<PermisosPage />} />
-                    <Route path="/notas" element={<NotasPage />} />
+                    <Route path="/materiales" element={<MaterialesPage />} />
+                    <Route path="/seguimiento" element={<SeguimientoPage />} />
+                    <Route path="/facturas" element={<FacturasPage />} />
+                    <Route path="/informes" element={<InformesPage />} />
                   </Routes>
                 </Suspense>
               </Layout>

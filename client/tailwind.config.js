@@ -18,8 +18,8 @@ export default {
             600: '#757575',  // Iconos inactivos
             800: '#424242',  // Texto principal
           },
-          'red': '#F44336',    // Notificaciones, alertas
-          'green': '#25D366',  // WhatsApp
+          'red': '#DC2626',    // Primary - Notificaciones, alertas, acciones
+          'green': '#25D366',  // Solo para WhatsApp
         },
       },
       fontFamily: {

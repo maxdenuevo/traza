@@ -1,9 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { permisosService } from '../services/permisos';
+import type { Permiso, PermisoEstado, PermisoTipo } from '../types';
 
-/**
- * Get all permisos for a project
- */
 export const usePermisos = (proyectoId: string) => {
   return useQuery({
     queryKey: ['permisos', proyectoId],
@@ -12,61 +10,49 @@ export const usePermisos = (proyectoId: string) => {
   });
 };
 
-/**
- * Get permisos expiring soon
- */
-export const usePermisosExpiringSoon = (proyectoId: string) => {
-  return useQuery({
-    queryKey: ['permisos', 'expiring-soon', proyectoId],
-    queryFn: () => permisosService.getExpiringSoon(proyectoId),
-    enabled: !!proyectoId,
-  });
-};
-
-/**
- * Get a single permiso by ID
- */
 export const usePermiso = (id: string) => {
   return useQuery({
-    queryKey: ['permisos', id],
-    queryFn: () => permisosService.getById(id),
+    queryKey: ['permisos', 'detail', id],
+    queryFn: async () => {
+      const all = await permisosService.getAll('');
+      return all.find(p => p.id === id) || null;
+    },
     enabled: !!id,
   });
 };
 
-/**
- * Create a permiso
- */
 export const useCreatePermiso = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (permiso: Parameters<typeof permisosService.create>[0]) =>
-      permisosService.create(permiso),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['permisos'] });
+    mutationFn: (data: {
+      proyectoId: string;
+      nombre: string;
+      tipo: PermisoTipo;
+      estado?: PermisoEstado;
+      notas?: string;
+      fechaVencimiento?: Date;
+    }) => permisosService.create(data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['permisos', variables.proyectoId] });
     },
   });
 };
 
-/**
- * Update a permiso
- */
 export const useUpdatePermiso = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Parameters<typeof permisosService.update>[1] }) =>
-      permisosService.update(id, updates),
+    mutationFn: ({ id, updates }: { 
+      id: string; 
+      updates: Partial<Omit<Permiso, 'id' | 'proyectoId' | 'createdAt'>> 
+    }) => permisosService.update(id, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['permisos'] });
     },
   });
 };
 
-/**
- * Delete a permiso
- */
 export const useDeletePermiso = () => {
   const queryClient = useQueryClient();
 

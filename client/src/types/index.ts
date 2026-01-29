@@ -1,6 +1,6 @@
 // ==================== User & Authentication ====================
 
-export type UserRole = 'admin' | 'jefe_proyecto' | 'especialista' | 'cliente';
+export type UserRole = 'admin' | 'jefe_proyecto' | 'especialista' | 'trabajador' | 'subcontratado' | 'cliente';
 
 export interface User {
   id: string;
@@ -33,7 +33,6 @@ export interface Proyecto {
   visitas: Visita[];
   pendientes: Pendiente[];
   documentos: Documento[];
-  notas: Nota[];
   presupuestoItems: PresupuestoItem[];
   createdAt: Date;
   updatedAt: Date;
@@ -89,8 +88,18 @@ export interface Asunto {
 
 // ==================== Pendiente (Tarea) ====================
 
-export type PendienteEstado = 'pausa' | 'en_obra' | 'terminado';
+export type PendienteEstado = 'creada' | 'en_progreso' | 'pausada' | 'completada' | 'cancelada';
 export type PendientePrioridad = 'baja' | 'media' | 'alta';
+
+export interface PendientePauseLog {
+  id: string;
+  pendienteId: string;
+  pausedAt: Date;
+  resumedAt?: Date;
+  motivo?: string;
+  pausedBy: string;
+  pausedByName?: string;
+}
 
 export interface Pendiente {
   id: string;
@@ -111,6 +120,8 @@ export interface Pendiente {
   fechaVencimiento?: Date;
   fechaCompletado?: Date;
   notasAdicionales?: string;
+  attachments?: string[];
+  pauseLogs?: PendientePauseLog[];
   creadoPor: string;
   visitaId?: string;
   asuntoId?: string;
@@ -139,24 +150,6 @@ export interface Documento {
     id: string;
     nombre: string;
   };
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// ==================== Nota ====================
-
-export interface Nota {
-  id: string;
-  proyectoId: string;
-  contenido: string;
-  area?: string;
-  autorId: string;
-  autor?: {
-    id: string;
-    nombre: string;
-  };
-  convertidaAPendiente: boolean;
-  pendienteId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -234,4 +227,125 @@ export interface StatusColor {
   bg: string;
   text: string;
   indicator: string;
+}
+
+// ==================== Programa (ex Cronograma) ====================
+
+export type SectorStatus = 'pendiente' | 'en_curso' | 'pausado' | 'entregado' | 'cancelado';
+
+export interface ProgramaSector {
+  id: string;
+  proyectoId: string;
+  sectorNombre: string;
+  fechaInicio?: Date;
+  fechaEntregaPropuesta?: Date;
+  fechaEntregaReal?: Date;
+  obras?: string;
+  valorEstimado?: number;
+  valorActual?: number;
+  status: SectorStatus;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// ==================== Material ====================
+
+export type MaterialEstado = 'disponible' | 'agotado' | 'por_comprar';
+
+export interface Material {
+  id: string;
+  proyectoId: string;
+  codigo?: string;
+  descripcion: string;
+  marca?: string;
+  modelo?: string;
+  sucursal?: string;
+  cantidad: number;
+  proveedor?: string;
+  ubicacion?: string;
+  facturaId?: string;
+  sectorNombre?: string;
+  estado: MaterialEstado;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// ==================== Factura ====================
+
+export interface Factura {
+  id: string;
+  proyectoId: string;
+  numero: string;
+  fecha: Date;
+  valor: number;
+  valorConIva: number;
+  proveedor: string;
+  pagadoPor?: string;
+  detalle?: string;
+  sucursal?: string;
+  rut?: string;
+  direccion?: string;
+  archivoUrl?: string;
+  sectorNombre?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// ==================== Checkbox ====================
+
+export type Periodicidad = 'diario' | 'semanal' | 'quincenal' | 'mensual';
+
+export interface CheckboxItem {
+  id: string;
+  proyectoId: string;
+  sectorNombre?: string;
+  descripcion: string;
+  periodicidad: Periodicidad;
+  activo: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CheckboxCheck {
+  id: string;
+  itemId: string;
+  fecha: Date;
+  completado: boolean;
+  checkedBy: string;
+  createdAt: Date;
+}
+
+// ==================== Asistencia ====================
+
+export interface Asistencia {
+  id: string;
+  proyectoId: string;
+  trabajadorId: string;
+  fecha: Date;
+  presente: boolean;
+  registradoPor: string;
+  createdAt: Date;
+}
+
+// ==================== Informe ====================
+
+export interface InformeContenido {
+  resumen: string;
+  pendientesCompletados: number;
+  pendientesTotales: number;
+  asistenciaPromedio: number;
+  sectoresEstado: { sectorNombre: string; status: SectorStatus }[];
+  observaciones: string;
+}
+
+export interface Informe {
+  id: string;
+  proyectoId: string;
+  numero: number;
+  fecha: Date;
+  periodicidad: Periodicidad;
+  contenido: InformeContenido;
+  archivoUrl?: string;
+  generadoPor: string;
+  createdAt: Date;
 }

@@ -3,21 +3,39 @@ import type { StatusColor } from '../types';
 // ==================== Estado Colors ====================
 
 export const PENDIENTE_ESTADO_COLORS: Record<string, StatusColor> = {
-  pausa: {
-    bg: 'bg-esant-gray-100',
-    text: 'text-esant-gray-600',
-    indicator: 'bg-esant-gray-400'
+  creada: {
+    bg: 'bg-blue-50',
+    text: 'text-blue-700',
+    indicator: 'bg-blue-400'
   },
-  en_obra: {
+  en_progreso: {
     bg: 'bg-yellow-50',
     text: 'text-yellow-700',
     indicator: 'bg-yellow-400'
   },
-  terminado: {
+  pausada: {
+    bg: 'bg-esant-gray-100',
+    text: 'text-esant-gray-600',
+    indicator: 'bg-esant-gray-400'
+  },
+  completada: {
     bg: 'bg-green-50',
     text: 'text-green-700',
-    indicator: 'bg-esant-green'
+    indicator: 'bg-green-500'
+  },
+  cancelada: {
+    bg: 'bg-red-50',
+    text: 'text-red-700',
+    indicator: 'bg-red-400'
   }
+};
+
+export const PENDIENTE_ESTADO_LABELS: Record<string, string> = {
+  creada: 'Creada',
+  en_progreso: 'En progreso',
+  pausada: 'Pausada',
+  completada: 'Completada',
+  cancelada: 'Cancelada',
 };
 
 export const PERMISO_ESTADO_COLORS: Record<string, StatusColor> = {
@@ -209,6 +227,8 @@ export const USER_ROLE_LABELS: Record<string, string> = {
   admin: 'Administrador',
   jefe_proyecto: 'Jefe de Proyecto',
   especialista: 'Especialista',
+  trabajador: 'Trabajador',
+  subcontratado: 'Subcontratado',
   cliente: 'Cliente',
 };
 
@@ -227,6 +247,16 @@ export const USER_ROLE_COLORS: Record<string, StatusColor> = {
     bg: 'bg-green-50',
     text: 'text-green-700',
     indicator: 'bg-esant-green'
+  },
+  trabajador: {
+    bg: 'bg-yellow-50',
+    text: 'text-yellow-700',
+    indicator: 'bg-yellow-400'
+  },
+  subcontratado: {
+    bg: 'bg-orange-50',
+    text: 'text-orange-700',
+    indicator: 'bg-orange-400'
   },
   cliente: {
     bg: 'bg-esant-gray-100',

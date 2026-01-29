@@ -7,6 +7,7 @@ import { Calendar } from '../../components/features/Calendar';
 import { VisitaForm } from '../../components/features/VisitaForm';
 import { AreaAsuntosList } from '../../components/features/AreaAsuntosList';
 import { VisitaHistorial } from '../../components/features/VisitaHistorial';
+import { DailyOperations } from '../../components/features/DailyOperations';
 import { Modal } from '../../components/common/Modal';
 import { Card } from '../../components/common/Card';
 import { Icon } from '../../components/common/Icon';
@@ -14,7 +15,7 @@ import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { FAB } from '../../components/common/FAB';
 import { useProjectStore } from '../../store/useProjectStore';
 import { useAuthStore } from '../../store/useAuthStore';
-import { SECTORS } from '../../store/useCronogramaStore';
+import { SECTORS } from '../../store/useProgramaStore';
 import {
   useVisitas,
   useProximaVisita,
@@ -34,6 +35,8 @@ export const VisitasPage = () => {
   const [showNewVisitModal, setShowNewVisitModal] = useState(false);
   const [currentVisita, setCurrentVisita] = useState<Visita | null>(null);
   const [showSectores, setShowSectores] = useState(true);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [showDailyOps, setShowDailyOps] = useState(false);
 
   // Fetch data from Supabase
   const { data: visitas = [], isLoading } = useVisitas(currentProject?.id || '');
@@ -232,14 +235,22 @@ export const VisitasPage = () => {
       <Calendar
         visitas={visitas}
         proximaVisita={proximaVisita?.fecha}
-        onDayClick={(date) => console.log('Clicked day:', date)}
+        onDayClick={(date) => {
+          setSelectedDate(date);
+          setShowDailyOps(true);
+        }}
       />
+
+      {/* Daily Operations (Checkbox + Asistencia) */}
+      {showDailyOps && (
+        <DailyOperations fecha={selectedDate} />
+      )}
 
       {/* Próxima Visita Card */}
       {proximaVisita && (
         <Card className="p-4">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-2 h-2 rounded-full bg-[#E53935]"></div>
+            <div className="w-2 h-2 rounded-full bg-[#DC2626]"></div>
             <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Próxima visita</span>
           </div>
           <div className="flex items-start justify-between">
@@ -271,7 +282,7 @@ export const VisitasPage = () => {
             <h3 className="font-semibold text-xl text-gray-900">
               Visita {format(new Date(currentVisita.fecha), "dd/MM/yy", { locale: es })}
             </h3>
-            <span className="text-xs bg-[#E53935] text-white px-3 py-1.5 rounded font-medium">
+            <span className="text-xs bg-[#DC2626] text-white px-3 py-1.5 rounded font-medium">
               En curso
             </span>
           </div>
@@ -345,7 +356,7 @@ export const VisitasPage = () => {
                 >
                   <span className="text-gray-900">{sector}</span>
                   {count > 0 ? (
-                    <span className="min-w-[24px] h-6 px-2 flex items-center justify-center bg-[#E53935] text-white text-xs font-bold rounded-full">
+                    <span className="min-w-[24px] h-6 px-2 flex items-center justify-center bg-[#DC2626] text-white text-xs font-bold rounded-full">
                       {count}
                     </span>
                   ) : (

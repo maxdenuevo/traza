@@ -100,3 +100,27 @@ export const usePendientesStats = (proyectoId: string) => {
     enabled: !!proyectoId,
   });
 };
+
+export const usePausePendiente = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, motivo, userId }: { id: string; motivo?: string; userId: string }) =>
+      pendientesService.pause(id, motivo, userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pendientes'] });
+    },
+  });
+};
+
+export const useResumePendiente = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, userId }: { id: string; userId: string }) =>
+      pendientesService.resume(id, userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pendientes'] });
+    },
+  });
+};

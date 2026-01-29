@@ -39,7 +39,6 @@ const MOCK_FULL_PROJECT: Proyecto = {
   visitas: [],
   pendientes: [],
   documentos: [],
-  notas: [],
   presupuestoItems: [],
 };
 
@@ -117,7 +116,6 @@ export const proyectosService = {
       visitas: data.visitas || [],
       pendientes: data.pendientes || [],
       documentos: data.documentos || [],
-      notas: data.notas || [],
       presupuestoItems: data.presupuesto_items || [],
       createdAt: new Date(data.created_at),
       updatedAt: new Date(data.updated_at),
@@ -140,7 +138,6 @@ export const proyectosService = {
         visitas: [],
         pendientes: [],
         documentos: [],
-        notas: [],
         presupuestoItems: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -192,7 +189,6 @@ export const proyectosService = {
       visitas: [],
       pendientes: [],
       documentos: [],
-      notas: [],
       presupuestoItems: [],
       createdAt: new Date(newProject.created_at),
       updatedAt: new Date(newProject.updated_at),

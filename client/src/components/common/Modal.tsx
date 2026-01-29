@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { Icon } from './Icon';
 
@@ -17,6 +17,25 @@ export const Modal = ({
   children,
   size = 'md'
 }: ModalProps) => {
+  // Handle browser back button - close modal instead of navigating
+  const handlePopState = useCallback(() => {
+    if (isOpen) {
+      onClose();
+    }
+  }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (isOpen) {
+      // Push a dummy state to handle back button
+      window.history.pushState({ modal: true }, '');
+      window.addEventListener('popstate', handlePopState);
+    }
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [isOpen, handlePopState]);
+
   // Prevent body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
@@ -28,6 +47,18 @@ export const Modal = ({
       document.body.style.overflow = 'unset';
     };
   }, [isOpen]);
+
+  // Handle Escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 

@@ -19,20 +19,19 @@ import {
   useUploadDocumento,
   useDeleteDocumento,
 } from '../../hooks/useDocumentos';
-import { useNotas, useCreateNota, useDeleteNota } from '../../hooks/useNotas';
 import { usePermisos, useCreatePermiso, useUpdatePermiso, useDeletePermiso } from '../../hooks/usePermisos';
 import { documentosService } from '../../services/documentos';
-import type { Documento, DocumentoCategoria, Nota, Permiso, PermisoEstado, PermisoTipo } from '../../types';
+import type { Documento, DocumentoCategoria, Permiso, PermisoEstado, PermisoTipo } from '../../types';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-type FeedItemType = 'documento' | 'nota' | 'permiso' | 'all';
+type FeedItemType = 'documento' | 'permiso' | 'all';
 
 type FeedItem = {
   id: string;
-  type: 'documento' | 'nota' | 'permiso';
+  type: 'documento' | 'permiso';
   createdAt: Date;
-  data: Documento | Nota | Permiso;
+  data: Documento | Permiso;
 };
 
 export const DocumentosPage = () => {
@@ -40,28 +39,23 @@ export const DocumentosPage = () => {
   const { user } = useAuthStore();
   const [filter, setFilter] = useState<FeedItemType>('all');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [addType, setAddType] = useState<'documento' | 'nota' | 'permiso'>('documento');
+  const [addType, setAddType] = useState<'documento' | 'permiso'>('documento');
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch data
   const { data: documentos = [], isLoading: loadingDocs } = useDocumentos(currentProject?.id || '');
-  const { data: notas = [], isLoading: loadingNotas } = useNotas(currentProject?.id || '');
   const { data: permisos = [], isLoading: loadingPermisos } = usePermisos(currentProject?.id || '');
 
   // Mutations
   const uploadDocMutation = useUploadDocumento();
   const deleteDocMutation = useDeleteDocumento();
-  const createNotaMutation = useCreateNota();
-  const deleteNotaMutation = useDeleteNota();
   const createPermisoMutation = useCreatePermiso();
   const updatePermisoMutation = useUpdatePermiso();
   const deletePermisoMutation = useDeletePermiso();
 
   // Form states
   const [selectedCategory, setSelectedCategory] = useState<DocumentoCategoria>('planos');
-  const [notaContent, setNotaContent] = useState('');
-  const [notaArea, setNotaArea] = useState('');
   const [permisoForm, setPermisoForm] = useState({
     nombre: '',
     tipo: 'edificacion' as PermisoTipo,
@@ -69,13 +63,12 @@ export const DocumentosPage = () => {
     notas: '',
   });
 
-  const isLoading = loadingDocs || loadingNotas || loadingPermisos;
+  const isLoading = loadingDocs || loadingPermisos;
 
   // Combine all items into feed
   const feedItems = useMemo<FeedItem[]>(() => {
     const items: FeedItem[] = [
       ...documentos.map((doc) => ({ id: doc.id, type: 'documento' as const, createdAt: doc.createdAt, data: doc })),
-      ...notas.map((nota) => ({ id: nota.id, type: 'nota' as const, createdAt: nota.createdAt, data: nota })),
       ...permisos.map((permiso) => ({ id: permiso.id, type: 'permiso' as const, createdAt: permiso.createdAt, data: permiso })),
     ];
 
@@ -88,7 +81,7 @@ export const DocumentosPage = () => {
     }
 
     return items;
-  }, [documentos, notas, permisos, filter]);
+  }, [documentos, permisos, filter]);
 
   // Handlers
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -121,23 +114,6 @@ export const DocumentosPage = () => {
     }
   };
 
-  const handleCreateNota = async () => {
-    if (!notaContent.trim() || !currentProject || !user) return;
-
-    try {
-      await createNotaMutation.mutateAsync({
-        nota: { proyectoId: currentProject.id, contenido: notaContent, area: notaArea },
-        userId: user.id,
-      });
-      toast.success('Nota creada');
-      setNotaContent('');
-      setNotaArea('');
-      setShowAddModal(false);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Error al crear nota');
-    }
-  };
-
   const handleCreatePermiso = async () => {
     if (!permisoForm.nombre.trim() || !currentProject) return;
 
@@ -157,8 +133,6 @@ export const DocumentosPage = () => {
   const handleDeleteItem = async (item: FeedItem) => {
     const confirmMsg = item.type === 'documento'
       ? `¿Eliminar "${(item.data as Documento).nombre}"?`
-      : item.type === 'nota'
-      ? '¿Eliminar esta nota?'
       : `¿Eliminar permiso "${(item.data as Permiso).nombre}"?`;
 
     if (!confirm(confirmMsg)) return;
@@ -166,8 +140,6 @@ export const DocumentosPage = () => {
     try {
       if (item.type === 'documento') {
         await deleteDocMutation.mutateAsync(item.id);
-      } else if (item.type === 'nota') {
-        await deleteNotaMutation.mutateAsync(item.id);
       } else {
         await deletePermisoMutation.mutateAsync(item.id);
       }
@@ -198,8 +170,6 @@ export const DocumentosPage = () => {
         case 'png': return 'image';
         default: return 'file';
       }
-    } else if (item.type === 'nota') {
-      return 'sticky-note';
     } else {
       return 'scroll-text';
     }
@@ -261,46 +231,6 @@ export const DocumentosPage = () => {
                 <Icon name="trash-2" size={16} className="text-esant-red" />
               </button>
             </div>
-          </div>
-        </div>
-      );
-    } else if (item.type === 'nota') {
-      const nota = item.data as Nota;
-      return (
-        <div key={item.id} className="bg-yellow-50 rounded-xl shadow-esant p-5 hover:shadow-lg smooth-transition border-l-4 border-yellow-400">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-start gap-3 flex-1">
-              <div className="w-10 h-10 rounded-lg bg-yellow-100 flex items-center justify-center flex-shrink-0">
-                <Icon name="sticky-note" size={20} className="text-yellow-700" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs px-2 py-0.5 rounded bg-yellow-200 text-yellow-800 font-medium">
-                    Nota
-                  </span>
-                  {nota.area && (
-                    <span className="text-xs text-esant-gray-600">{nota.area}</span>
-                  )}
-                  <span className="text-xs text-esant-gray-400">
-                    {formatDistanceToNow(nota.createdAt, { addSuffix: true, locale: es })}
-                  </span>
-                  {nota.autor && (
-                    <>
-                      <span className="text-xs text-esant-gray-400">•</span>
-                      <span className="text-xs text-esant-gray-600">{nota.autor.nombre}</span>
-                    </>
-                  )}
-                </div>
-                <p className="text-sm text-esant-gray-800 whitespace-pre-wrap">{nota.contenido}</p>
-              </div>
-            </div>
-            <button
-              onClick={() => handleDeleteItem(item)}
-              className="p-2 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
-              title="Eliminar"
-            >
-              <Icon name="trash-2" size={16} className="text-esant-red" />
-            </button>
           </div>
         </div>
       );
@@ -386,7 +316,7 @@ export const DocumentosPage = () => {
       {/* Header */}
       <Card className="p-6">
         <h2 className="font-semibold text-xl text-esant-black mb-1">Documentos y Gestión</h2>
-        <p className="text-sm text-esant-gray-600">Documentos, permisos y notas del proyecto</p>
+        <p className="text-sm text-esant-gray-600">Documentos y permisos del proyecto</p>
 
         {/* Filters */}
         <div className="flex gap-2 mt-4 pt-4 border-t border-esant-gray-200 overflow-x-auto">
@@ -394,7 +324,6 @@ export const DocumentosPage = () => {
             { value: 'all' as const, label: 'Todo', count: feedItems.length },
             { value: 'documento' as const, label: 'Documentos', count: documentos.length },
             { value: 'permiso' as const, label: 'Permisos', count: permisos.length },
-            { value: 'nota' as const, label: 'Notas', count: notas.length },
           ].map((f) => (
             <button
               key={f.value}
@@ -422,7 +351,7 @@ export const DocumentosPage = () => {
         <Card className="p-8 text-center">
           <Icon name="inbox" size={48} className="text-esant-gray-400 mx-auto mb-3" />
           <p className="text-esant-gray-600 mb-2">No hay contenido</p>
-          <p className="text-sm text-esant-gray-400">Agrega documentos, permisos o notas</p>
+          <p className="text-sm text-esant-gray-400">Agrega documentos o permisos</p>
         </Card>
       ) : (
         <div className="space-y-3">
@@ -441,7 +370,6 @@ export const DocumentosPage = () => {
           <div className="flex gap-2">
             {[
               { value: 'documento' as const, label: 'Documento', icon: 'file' },
-              { value: 'nota' as const, label: 'Nota', icon: 'sticky-note' },
               { value: 'permiso' as const, label: 'Permiso', icon: 'scroll-text' },
             ].map((t) => (
               <button
@@ -493,35 +421,6 @@ export const DocumentosPage = () => {
                   <span className="ml-3 text-sm text-esant-gray-600">Subiendo...</span>
                 </div>
               )}
-            </>
-          )}
-
-          {/* Nota form */}
-          {addType === 'nota' && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-esant-gray-600 mb-2">Área (opcional)</label>
-                <input
-                  type="text"
-                  value={notaArea}
-                  onChange={(e) => setNotaArea(e.target.value)}
-                  placeholder="Ej: Cocina, Baño..."
-                  className="w-full px-0 py-3 bg-transparent border-0 border-b-2 border-esant-gray-200 text-esant-black placeholder-esant-gray-400 focus:outline-none focus:border-esant-black transition-colors text-base"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-esant-gray-600 mb-2">Contenido</label>
-                <textarea
-                  value={notaContent}
-                  onChange={(e) => setNotaContent(e.target.value)}
-                  placeholder="Escribe tu nota aquí..."
-                  rows={4}
-                  className="w-full px-4 py-3 border-2 border-esant-gray-200 rounded-lg text-esant-black placeholder-esant-gray-400 focus:outline-none focus:border-esant-black transition-colors text-base resize-none"
-                />
-              </div>
-              <Button variant="primary" fullWidth onClick={handleCreateNota} disabled={!notaContent.trim()}>
-                Guardar Nota
-              </Button>
             </>
           )}
 

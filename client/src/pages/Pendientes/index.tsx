@@ -1,19 +1,36 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { PENDIENTE_ESTADO_COLORS, generateWhatsAppLink } from '../../constants';
+import { PENDIENTE_ESTADO_COLORS, PENDIENTE_ESTADO_LABELS, AREAS_COMUNES, generateWhatsAppLink } from '../../constants';
 import { Icon } from '../../components/common/Icon';
 import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { Tabs } from '../../components/common/Tabs';
+import { Modal } from '../../components/common/Modal';
+import { FAB } from '../../components/common/FAB';
+import { AttachmentUploader } from '../../components/features/attachments/AttachmentUploader';
 import { useProjectStore } from '../../store/useProjectStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import {
   usePendientesByArea,
   usePendientesByResponsable,
+  useCreatePendiente,
   useUpdatePendienteEstado,
+  usePausePendiente,
+  useResumePendiente,
   useDeletePendiente,
 } from '../../hooks/usePendientes';
+import { useTeamMembers } from '../../hooks/useEquipo';
+import { useAttachments } from '../../hooks/useAttachments';
 import type { Pendiente, PendienteEstado } from '../../types';
+
+const ESTADO_TRANSITIONS: Record<PendienteEstado, PendienteEstado[]> = {
+  creada: ['en_progreso', 'cancelada'],
+  en_progreso: ['pausada', 'completada', 'cancelada'],
+  pausada: ['en_progreso', 'cancelada'],
+  completada: [],
+  cancelada: [],
+};
 
 type ViewMode = 'sector' | 'responsable';
 
@@ -24,18 +41,91 @@ const VIEW_TABS = [
 
 export const PendientesPage = () => {
   const { currentProject } = useProjectStore();
+  const { user } = useAuthStore();
   const [expandedAreas, setExpandedAreas] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<ViewMode>('sector');
+  const [showNewModal, setShowNewModal] = useState(false);
+  const [showPauseModal, setShowPauseModal] = useState(false);
+  const [pausingPendiente, setPausingPendiente] = useState<Pendiente | null>(null);
+  const [pauseMotivo, setPauseMotivo] = useState('');
+  const [newPendiente, setNewPendiente] = useState({
+    tarea: '',
+    area: '',
+    encargadoId: '',
+    notasAdicionales: '',
+  });
+  const [detailPendiente, setDetailPendiente] = useState<Pendiente | null>(null);
 
   // Fetch data
   const { data: areasPendientes = [], isLoading: isLoadingAreas } = usePendientesByArea(currentProject?.id || '');
   const { data: responsablesPendientes = [], isLoading: isLoadingResponsables } = usePendientesByResponsable(currentProject?.id || '');
+  const { data: teamMembers = [] } = useTeamMembers(currentProject?.id || '');
 
   const isLoading = isLoadingAreas || isLoadingResponsables;
 
   // Mutations
+  const createMutation = useCreatePendiente();
   const updateEstadoMutation = useUpdatePendienteEstado();
+  const pauseMutation = usePausePendiente();
+  const resumeMutation = useResumePendiente();
   const deleteMutation = useDeletePendiente();
+
+  const handleCreatePendiente = async () => {
+    if (!newPendiente.tarea.trim() || !newPendiente.area || !currentProject || !user) return;
+
+    try {
+      await createMutation.mutateAsync({
+        pendiente: {
+          proyectoId: currentProject.id,
+          tarea: newPendiente.tarea,
+          area: newPendiente.area,
+          encargadoId: newPendiente.encargadoId || undefined,
+          notasAdicionales: newPendiente.notasAdicionales || undefined,
+          estado: 'creada',
+        },
+        userId: user.id,
+      });
+      toast.success('Pendiente creado');
+      setNewPendiente({ tarea: '', area: '', encargadoId: '', notasAdicionales: '' });
+      setShowNewModal(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Error al crear pendiente');
+    }
+  };
+
+  const handlePause = (pendiente: Pendiente) => {
+    setPausingPendiente(pendiente);
+    setPauseMotivo('');
+    setShowPauseModal(true);
+  };
+
+  const confirmPause = async () => {
+    if (!pausingPendiente || !user) return;
+
+    try {
+      await pauseMutation.mutateAsync({
+        id: pausingPendiente.id,
+        motivo: pauseMotivo || undefined,
+        userId: user.id,
+      });
+      toast.success('Tarea pausada');
+      setShowPauseModal(false);
+      setPausingPendiente(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Error al pausar');
+    }
+  };
+
+  const handleResume = async (pendiente: Pendiente) => {
+    if (!user) return;
+
+    try {
+      await resumeMutation.mutateAsync({ id: pendiente.id, userId: user.id });
+      toast.success('Tarea reanudada');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Error al reanudar');
+    }
+  };
 
   const toggleArea = (area: string) => {
     setExpandedAreas((prev) => {
@@ -50,9 +140,21 @@ export const PendientesPage = () => {
   };
 
   const handleEstadoChange = async (pendiente: Pendiente, nuevoEstado: PendienteEstado) => {
+    // Use pause flow for pausada transition
+    if (nuevoEstado === 'pausada') {
+      handlePause(pendiente);
+      return;
+    }
+
+    // Use resume flow for en_progreso from pausada
+    if (nuevoEstado === 'en_progreso' && pendiente.estado === 'pausada') {
+      handleResume(pendiente);
+      return;
+    }
+
     try {
       await updateEstadoMutation.mutateAsync({ id: pendiente.id, estado: nuevoEstado });
-      toast.success(`Estado actualizado a "${nuevoEstado}"`);
+      toast.success(`Estado actualizado a "${PENDIENTE_ESTADO_LABELS[nuevoEstado] || nuevoEstado}"`);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error al actualizar estado';
       toast.error(errorMessage);
@@ -121,7 +223,10 @@ export const PendientesPage = () => {
     >
       {/* Pendiente Header */}
       <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex-1">
+        <button
+          onClick={() => setDetailPendiente(pendiente)}
+          className="flex-1 text-left"
+        >
           <h4 className="font-medium text-base text-esant-black mb-1">
             {pendiente.tarea}
           </h4>
@@ -134,7 +239,14 @@ export const PendientesPage = () => {
               {pendiente.area}
             </p>
           )}
-        </div>
+          {/* Attachment indicator */}
+          {pendiente.attachments && pendiente.attachments.length > 0 && (
+            <p className="text-xs text-esant-gray-500 mt-1 flex items-center gap-1">
+              <Icon name="paperclip" size={12} />
+              {pendiente.attachments.length} archivo{pendiente.attachments.length !== 1 ? 's' : ''}
+            </p>
+          )}
+        </button>
         <button
           onClick={() => handleDelete(pendiente.id)}
           className="p-2 hover:bg-red-50 rounded-lg transition-colors"
@@ -143,27 +255,38 @@ export const PendientesPage = () => {
         </button>
       </div>
 
-      {/* Estado Selector */}
-      <div className="flex flex-wrap gap-2 mb-3">
-        {(['pausa', 'en_obra', 'terminado'] as PendienteEstado[]).map((estado) => {
-          const isActive = pendiente.estado === estado;
-          const colors = PENDIENTE_ESTADO_COLORS[estado];
-
-          return (
-            <button
-              key={estado}
-              onClick={() => handleEstadoChange(pendiente, estado)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                isActive
-                  ? `${colors.bg} ${colors.text} shadow-sm`
-                  : 'bg-esant-gray-100 text-esant-gray-600 hover:bg-esant-gray-200'
-              }`}
-            >
-              {estado.replace('_', ' ')}
-            </button>
-          );
-        })}
+      {/* Estado actual */}
+      <div className="mb-3">
+        <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium ${PENDIENTE_ESTADO_COLORS[pendiente.estado]?.bg} ${PENDIENTE_ESTADO_COLORS[pendiente.estado]?.text}`}>
+          <div className={`w-2 h-2 rounded-full ${PENDIENTE_ESTADO_COLORS[pendiente.estado]?.indicator}`}></div>
+          {PENDIENTE_ESTADO_LABELS[pendiente.estado] || pendiente.estado}
+        </span>
       </div>
+
+      {/* Acciones de estado */}
+      {ESTADO_TRANSITIONS[pendiente.estado]?.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-3">
+          {ESTADO_TRANSITIONS[pendiente.estado].map((nuevoEstado) => {
+            const colors = PENDIENTE_ESTADO_COLORS[nuevoEstado];
+            const isPause = nuevoEstado === 'pausada';
+            const isResume = nuevoEstado === 'en_progreso' && pendiente.estado === 'pausada';
+
+            return (
+              <button
+                key={nuevoEstado}
+                onClick={() => handleEstadoChange(pendiente, nuevoEstado)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1 ${colors.bg} ${colors.text} hover:opacity-80`}
+              >
+                {isPause && <Icon name="pause" size={14} />}
+                {isResume && <Icon name="play" size={14} />}
+                {nuevoEstado === 'completada' && <Icon name="check" size={14} />}
+                {nuevoEstado === 'cancelada' && <Icon name="x" size={14} />}
+                {PENDIENTE_ESTADO_LABELS[nuevoEstado]}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Encargado & WhatsApp */}
       {pendiente.encargado && (
@@ -307,6 +430,228 @@ export const PendientesPage = () => {
           </div>
         );
       })}
+
+      {/* FAB */}
+      <FAB onClick={() => setShowNewModal(true)} icon="plus" label="Nuevo pendiente" />
+
+      {/* Modal Nuevo Pendiente */}
+      <Modal
+        isOpen={showNewModal}
+        onClose={() => setShowNewModal(false)}
+        title="Nuevo Pendiente"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-esant-gray-600 mb-2">Tarea *</label>
+            <input
+              type="text"
+              value={newPendiente.tarea}
+              onChange={(e) => setNewPendiente({ ...newPendiente, tarea: e.target.value })}
+              placeholder="Descripción de la tarea..."
+              className="w-full px-0 py-3 bg-transparent border-0 border-b-2 border-esant-gray-200 text-esant-black placeholder-esant-gray-400 focus:outline-none focus:border-esant-black transition-colors text-base"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-esant-gray-600 mb-2">Área/Sector *</label>
+            <select
+              value={newPendiente.area}
+              onChange={(e) => setNewPendiente({ ...newPendiente, area: e.target.value })}
+              className="w-full px-0 py-3 bg-transparent border-0 border-b-2 border-esant-gray-200 text-esant-black focus:outline-none focus:border-esant-black transition-colors text-base"
+            >
+              <option value="">Seleccionar área...</option>
+              {AREAS_COMUNES.map((area) => (
+                <option key={area} value={area}>{area}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-esant-gray-600 mb-2">Encargado</label>
+            <select
+              value={newPendiente.encargadoId}
+              onChange={(e) => setNewPendiente({ ...newPendiente, encargadoId: e.target.value })}
+              className="w-full px-0 py-3 bg-transparent border-0 border-b-2 border-esant-gray-200 text-esant-black focus:outline-none focus:border-esant-black transition-colors text-base"
+            >
+              <option value="">Sin asignar</option>
+              {teamMembers.map((member) => (
+                <option key={member.id} value={member.id}>{member.nombre}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-esant-gray-600 mb-2">Notas adicionales</label>
+            <textarea
+              value={newPendiente.notasAdicionales}
+              onChange={(e) => setNewPendiente({ ...newPendiente, notasAdicionales: e.target.value })}
+              placeholder="Observaciones, detalles..."
+              rows={3}
+              className="w-full px-4 py-3 border-2 border-esant-gray-200 rounded-lg text-esant-black placeholder-esant-gray-400 focus:outline-none focus:border-esant-black transition-colors text-base resize-none"
+            />
+          </div>
+
+          <Button
+            variant="primary"
+            fullWidth
+            onClick={handleCreatePendiente}
+            disabled={!newPendiente.tarea.trim() || !newPendiente.area || createMutation.isPending}
+          >
+            {createMutation.isPending ? 'Creando...' : 'Crear Pendiente'}
+          </Button>
+        </div>
+      </Modal>
+
+      {/* Modal Pausar Pendiente */}
+      <Modal
+        isOpen={showPauseModal}
+        onClose={() => {
+          setShowPauseModal(false);
+          setPausingPendiente(null);
+        }}
+        title="Pausar Tarea"
+      >
+        <div className="space-y-4">
+          {pausingPendiente && (
+            <div className="bg-esant-gray-50 rounded-lg p-4">
+              <p className="text-sm text-esant-gray-500 mb-1">Tarea a pausar:</p>
+              <p className="font-medium text-esant-black">{pausingPendiente.tarea}</p>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-esant-gray-600 mb-2">
+              Motivo de la pausa (opcional)
+            </label>
+            <textarea
+              value={pauseMotivo}
+              onChange={(e) => setPauseMotivo(e.target.value)}
+              placeholder="Ej: Esperando materiales, Cliente solicitó esperar..."
+              rows={3}
+              className="w-full px-4 py-3 border-2 border-esant-gray-200 rounded-lg text-esant-black placeholder-esant-gray-400 focus:outline-none focus:border-esant-black transition-colors text-base resize-none"
+            />
+          </div>
+
+          <div className="flex gap-3">
+            <Button
+              variant="secondary"
+              fullWidth
+              onClick={() => {
+                setShowPauseModal(false);
+                setPausingPendiente(null);
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="primary"
+              fullWidth
+              onClick={confirmPause}
+              disabled={pauseMutation.isPending}
+            >
+              {pauseMutation.isPending ? 'Pausando...' : 'Confirmar Pausa'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal Detalle Pendiente */}
+      {detailPendiente && currentProject && (
+        <PendienteDetailModal
+          pendiente={detailPendiente}
+          proyectoId={currentProject.id}
+          onClose={() => setDetailPendiente(null)}
+        />
+      )}
     </div>
+  );
+};
+
+// Detail Modal Component
+interface PendienteDetailModalProps {
+  pendiente: Pendiente;
+  proyectoId: string;
+  onClose: () => void;
+}
+
+const PendienteDetailModal = ({ pendiente, proyectoId, onClose }: PendienteDetailModalProps) => {
+  const { uploadFiles, removeAttachment, isUploading, uploadProgress } = useAttachments({
+    proyectoId,
+    pendienteId: pendiente.id,
+    currentAttachments: pendiente.attachments || [],
+  });
+
+  const handleUpload = async (files: FileList) => {
+    await uploadFiles(files);
+  };
+
+  const handleRemove = async (url: string) => {
+    await removeAttachment(url);
+  };
+
+  return (
+    <Modal isOpen onClose={onClose} title={pendiente.tarea}>
+      <div className="space-y-4">
+        {/* Estado */}
+        <div>
+          <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium ${PENDIENTE_ESTADO_COLORS[pendiente.estado]?.bg} ${PENDIENTE_ESTADO_COLORS[pendiente.estado]?.text}`}>
+            <div className={`w-2 h-2 rounded-full ${PENDIENTE_ESTADO_COLORS[pendiente.estado]?.indicator}`}></div>
+            {PENDIENTE_ESTADO_LABELS[pendiente.estado] || pendiente.estado}
+          </span>
+        </div>
+
+        {/* Info */}
+        <div className="space-y-2 text-sm">
+          <div className="flex items-center gap-2 text-esant-gray-600">
+            <Icon name="map-pin" size={14} />
+            <span>{pendiente.area}</span>
+          </div>
+          {pendiente.encargado && (
+            <div className="flex items-center gap-2 text-esant-gray-600">
+              <Icon name="user" size={14} />
+              <span>
+                {pendiente.encargado.nombre}
+                {pendiente.encargado.especialidad && ` - ${pendiente.encargado.especialidad}`}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Descripcion */}
+        {pendiente.descripcion && (
+          <div>
+            <label className="block text-sm font-medium text-esant-gray-600 mb-1">Descripción</label>
+            <p className="text-esant-gray-800 bg-esant-gray-50 rounded-lg p-3 text-sm">{pendiente.descripcion}</p>
+          </div>
+        )}
+
+        {/* Notas adicionales */}
+        {pendiente.notasAdicionales && (
+          <div>
+            <label className="block text-sm font-medium text-esant-gray-600 mb-1">Notas</label>
+            <p className="text-esant-gray-800 bg-esant-gray-50 rounded-lg p-3 text-sm">{pendiente.notasAdicionales}</p>
+          </div>
+        )}
+
+        {/* Attachments */}
+        <div>
+          <label className="block text-sm font-medium text-esant-gray-600 mb-2">
+            Archivos adjuntos
+          </label>
+          <AttachmentUploader
+            attachments={pendiente.attachments || []}
+            onUpload={handleUpload}
+            onRemove={handleRemove}
+            isUploading={isUploading}
+            uploadProgress={uploadProgress}
+          />
+        </div>
+
+        {/* Close button */}
+        <Button variant="secondary" fullWidth onClick={onClose}>
+          Cerrar
+        </Button>
+      </div>
+    </Modal>
   );
 };

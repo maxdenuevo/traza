@@ -38,7 +38,7 @@ export const Header = ({
         >
           <Icon name="bell" size={24} className="text-gray-900" />
           {notificationCount > 0 && (
-            <span className="absolute top-0.5 right-0.5 min-w-[20px] h-[20px] px-1 flex items-center justify-center bg-[#E53935] text-white text-xs font-bold rounded-full">
+            <span className="absolute top-0.5 right-0.5 min-w-[20px] h-[20px] px-1 flex items-center justify-center bg-[#DC2626] text-white text-xs font-bold rounded-full">
               {notificationCount > 9 ? '9+' : notificationCount}
             </span>
           )}

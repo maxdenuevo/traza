@@ -1,8 +1,10 @@
+import { useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Icon } from '../common/Icon';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useProjectStore } from '../../store/useProjectStore';
 import { useProyectos } from '../../hooks/useProyectos';
+import { usePermissions, type Permission } from '../../hooks/usePermissions';
 
 interface DrawerProps {
   isOpen: boolean;
@@ -10,16 +12,25 @@ interface DrawerProps {
   onOpenProjectSelector: () => void;
 }
 
-// Navigation items matching the client mockup order
-const DRAWER_NAV_ITEMS = [
-  { id: 'visitas', label: 'Visita', icon: 'calendar' },
-  { id: 'pendientes', label: 'Pendientes', icon: 'clipboard-list' },
-  { id: 'presupuesto', label: 'Presupuesto / Gastos', icon: 'wallet' },
-  { id: 'permisos', label: 'Permisos', icon: 'file-check' },
-  { id: 'documentos', label: 'Documentos', icon: 'folder' },
-  { id: 'notas', label: 'Notas equipo', icon: 'message-square' },
-  { id: 'equipo', label: 'Equipo', icon: 'users' },
-  { id: 'cronograma', label: 'Cronograma', icon: 'list-checks' },
+interface NavItem {
+  id: string;
+  label: string;
+  icon: string;
+  permissions: Permission[];
+}
+
+// Navigation items with required permissions
+const DRAWER_NAV_ITEMS: NavItem[] = [
+  { id: 'visitas', label: 'Libro de Obra', icon: 'calendar', permissions: ['libro_obra'] },
+  { id: 'pendientes', label: 'Pendientes', icon: 'clipboard-list', permissions: ['pendientes_ver'] },
+  { id: 'programa', label: 'Programa', icon: 'list-checks', permissions: ['programa_ver'] },
+  { id: 'seguimiento', label: 'Seguimiento', icon: 'activity', permissions: ['programa_ver'] },
+  { id: 'presupuesto', label: 'Presupuesto / Gastos', icon: 'wallet', permissions: ['presupuesto'] },
+  { id: 'facturas', label: 'Facturas', icon: 'receipt', permissions: ['facturas'] },
+  { id: 'documentos', label: 'Documentos', icon: 'folder', permissions: ['documentos'] },
+  { id: 'equipo', label: 'Equipo', icon: 'users', permissions: ['equipo_ver'] },
+  { id: 'materiales', label: 'Materiales', icon: 'package', permissions: ['materiales'] },
+  { id: 'informes', label: 'Informes', icon: 'file-text', permissions: ['informes_ver'] },
 ];
 
 export const Drawer = ({ isOpen, onClose, onOpenProjectSelector }: DrawerProps) => {
@@ -28,8 +39,35 @@ export const Drawer = ({ isOpen, onClose, onOpenProjectSelector }: DrawerProps) 
   const { signOut } = useAuthStore();
   const { currentProject, setCurrentProject } = useProjectStore();
   const { data: projects } = useProyectos();
+  const { hasAllPermissions, userRole } = usePermissions();
 
   const currentPath = location.pathname.split('/')[1] || 'visitas';
+
+  // Filter nav items based on user permissions
+  const visibleNavItems = useMemo(() => {
+    return DRAWER_NAV_ITEMS.filter(item =>
+      item.permissions.length === 0 || hasAllPermissions(item.permissions)
+    );
+  }, [hasAllPermissions, userRole]);
+
+  // Handle browser back button - close drawer instead of navigating
+  const handlePopState = useCallback(() => {
+    if (isOpen) {
+      onClose();
+    }
+  }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (isOpen) {
+      // Push a dummy state to handle back button
+      window.history.pushState({ drawer: true }, '');
+      window.addEventListener('popstate', handlePopState);
+    }
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [isOpen, handlePopState]);
 
   const handleNavClick = (id: string) => {
     navigate(`/${id}`);
@@ -79,7 +117,7 @@ export const Drawer = ({ isOpen, onClose, onOpenProjectSelector }: DrawerProps) 
 
         {/* Navigation Items */}
         <nav className="flex-1 py-2 overflow-y-auto">
-          {DRAWER_NAV_ITEMS.map((item) => {
+          {visibleNavItems.map((item) => {
             const isActive = currentPath === item.id;
 
             return (
@@ -94,7 +132,7 @@ export const Drawer = ({ isOpen, onClose, onOpenProjectSelector }: DrawerProps) 
               >
                 {/* Active indicator - red left border */}
                 {isActive && (
-                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#E53935]" />
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#DC2626]" />
                 )}
                 <Icon name={item.icon} className="w-5 h-5" />
                 <span className="font-medium">{item.label}</span>
@@ -136,7 +174,7 @@ export const Drawer = ({ isOpen, onClose, onOpenProjectSelector }: DrawerProps) 
         <div className="border-t border-white/10 p-4">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 text-[#E53935] hover:bg-red-500/10 rounded-lg transition-colors"
+            className="w-full flex items-center gap-3 px-4 py-3 text-[#DC2626] hover:bg-red-500/10 rounded-lg transition-colors"
           >
             <Icon name="log-out" className="w-5 h-5" />
             <span className="font-medium">Cerrar Sesión</span>

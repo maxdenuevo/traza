@@ -63,7 +63,7 @@ export default function Signup() {
       });
 
       setUser(user);
-      toast.success(`¡Bienvenido a Libro de Obra, ${user.nombre}!`);
+      toast.success(`¡Bienvenido a ESANT MARIA, ${user.nombre}!`);
       navigate('/');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error al crear la cuenta';
@@ -79,7 +79,7 @@ export default function Signup() {
       <div className="w-full max-w-2xl">
         {/* Logo/Header */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-esant-black mb-1">Libro de Obra</h1>
+          <h1 className="text-2xl font-bold text-esant-black mb-1">ESANT MARIA</h1>
           <p className="text-esant-gray-600 text-base">Crea tu cuenta</p>
         </div>
 
@@ -252,7 +252,7 @@ export default function Signup() {
 
         {/* Footer */}
         <p className="text-center text-esant-gray-400 text-sm mt-8">
-          Libro de Obra Digital
+          ESANT MARIA - Gestión de Construcción
         </p>
       </div>
     </div>

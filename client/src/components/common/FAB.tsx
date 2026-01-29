@@ -19,7 +19,7 @@ export const FAB = ({
       className={`
         fixed right-4 z-30
         w-14 h-14
-        bg-[#E53935] hover:bg-[#C62828]
+        bg-[#DC2626] hover:bg-[#B91C1C]
         text-white
         rounded-full
         shadow-lg hover:shadow-xl

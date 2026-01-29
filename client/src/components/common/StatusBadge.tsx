@@ -1,31 +1,41 @@
-type CronogramaStatus = 'listo' | 'pausado' | 'en_obra';
+type ProgramaStatus = 'pendiente' | 'en_curso' | 'pausado' | 'entregado' | 'cancelado';
 
 interface StatusBadgeProps {
-  status: CronogramaStatus;
+  status: ProgramaStatus;
   onClick?: () => void;
   disabled?: boolean;
 }
 
-const STATUS_CONFIG: Record<CronogramaStatus, { label: string; bg: string; text: string }> = {
-  listo: {
-    label: 'Listo',
-    bg: 'bg-[#4CAF50]',
+const STATUS_CONFIG: Record<ProgramaStatus, { label: string; bg: string; text: string }> = {
+  pendiente: {
+    label: 'Pendiente',
+    bg: 'bg-gray-300',
+    text: 'text-gray-800',
+  },
+  en_curso: {
+    label: 'En curso',
+    bg: 'bg-[#DC2626]',
     text: 'text-white',
   },
   pausado: {
     label: 'Pausado',
-    bg: 'bg-[#9E9E9E]',
+    bg: 'bg-gray-400',
     text: 'text-white',
   },
-  en_obra: {
-    label: 'En obra',
-    bg: 'bg-[#E53935]',
+  entregado: {
+    label: 'Entregado',
+    bg: 'bg-gray-900',
+    text: 'text-white',
+  },
+  cancelado: {
+    label: 'Cancelado',
+    bg: 'bg-gray-500',
     text: 'text-white',
   },
 };
 
 export const StatusBadge = ({ status, onClick, disabled = false }: StatusBadgeProps) => {
-  const config = STATUS_CONFIG[status];
+  const config = STATUS_CONFIG[status] || STATUS_CONFIG.pausado;
 
   if (onClick && !disabled) {
     return (
@@ -61,4 +71,4 @@ export const StatusBadge = ({ status, onClick, disabled = false }: StatusBadgePr
 };
 
 // Export for use in other components
-export type { CronogramaStatus };
+export type { ProgramaStatus };
