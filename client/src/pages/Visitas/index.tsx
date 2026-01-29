@@ -241,6 +241,30 @@ export const VisitasPage = () => {
         }}
       />
 
+      {/* Project Dates */}
+      {(currentProject?.fechaInicio || currentProject?.fechaEstimadaFin) && (
+        <Card className="p-4">
+          <div className="flex justify-between text-sm">
+            {currentProject?.fechaInicio && (
+              <div>
+                <span className="text-gray-500">Inicio de obra: </span>
+                <span className="font-medium text-gray-900">
+                  {format(new Date(currentProject.fechaInicio), "dd/MM/yy", { locale: es })}
+                </span>
+              </div>
+            )}
+            {currentProject?.fechaEstimadaFin && (
+              <div className="text-right">
+                <span className="text-gray-500">Entrega propuesta: </span>
+                <span className="font-medium text-gray-900">
+                  {format(new Date(currentProject.fechaEstimadaFin), "dd/MM/yy", { locale: es })}
+                </span>
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
+
       {/* Daily Operations (Checkbox + Asistencia) */}
       {showDailyOps && (
         <DailyOperations fecha={selectedDate} />

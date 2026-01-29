@@ -9,34 +9,34 @@ import { es } from 'date-fns/locale';
 
 const HEALTH_CONFIG = {
   completado: {
-    bg: 'bg-green-50',
-    text: 'text-green-700',
-    border: 'border-green-200',
-    indicator: 'bg-green-500',
+    bg: 'bg-esant-gray-100',
+    text: 'text-esant-black',
+    border: 'border-esant-gray-300',
+    indicator: 'bg-esant-black',
     label: 'Completado',
     icon: 'check-circle',
   },
   'en-tiempo': {
-    bg: 'bg-blue-50',
-    text: 'text-blue-700',
-    border: 'border-blue-200',
-    indicator: 'bg-blue-500',
+    bg: 'bg-esant-gray-50',
+    text: 'text-esant-gray-700',
+    border: 'border-esant-gray-200',
+    indicator: 'bg-esant-gray-500',
     label: 'En tiempo',
     icon: 'clock',
   },
   'en-riesgo': {
-    bg: 'bg-yellow-50',
-    text: 'text-yellow-700',
-    border: 'border-yellow-200',
-    indicator: 'bg-yellow-500',
+    bg: 'bg-esant-gray-100',
+    text: 'text-esant-gray-700',
+    border: 'border-esant-gray-300',
+    indicator: 'bg-esant-gray-400',
     label: 'En riesgo',
     icon: 'alert-triangle',
   },
   atrasado: {
     bg: 'bg-red-50',
-    text: 'text-red-700',
+    text: 'text-esant-red',
     border: 'border-red-200',
-    indicator: 'bg-red-500',
+    indicator: 'bg-esant-red',
     label: 'Atrasado',
     icon: 'alert-circle',
   },
@@ -94,45 +94,45 @@ export const SeguimientoPage = () => {
             onClick={() => setFilterHealth(filterHealth === 'completado' ? null : 'completado')}
             className={`p-2 rounded-lg text-center transition-all ${
               filterHealth === 'completado'
-                ? 'ring-2 ring-green-500 bg-green-50'
-                : 'bg-green-50/50'
+                ? 'ring-2 ring-esant-black bg-esant-gray-100'
+                : 'bg-esant-gray-100/50'
             }`}
           >
-            <div className="text-xl font-bold text-green-700">{summary.completados}</div>
-            <div className="text-[10px] text-green-600">Completados</div>
+            <div className="text-xl font-bold text-esant-black">{summary.completados}</div>
+            <div className="text-[10px] text-esant-gray-600">Completados</div>
           </button>
           <button
             onClick={() => setFilterHealth(filterHealth === 'en-tiempo' ? null : 'en-tiempo')}
             className={`p-2 rounded-lg text-center transition-all ${
               filterHealth === 'en-tiempo'
-                ? 'ring-2 ring-blue-500 bg-blue-50'
-                : 'bg-blue-50/50'
+                ? 'ring-2 ring-esant-gray-500 bg-esant-gray-100'
+                : 'bg-esant-gray-50'
             }`}
           >
-            <div className="text-xl font-bold text-blue-700">{summary.enTiempo}</div>
-            <div className="text-[10px] text-blue-600">En tiempo</div>
+            <div className="text-xl font-bold text-esant-gray-700">{summary.enTiempo}</div>
+            <div className="text-[10px] text-esant-gray-500">En tiempo</div>
           </button>
           <button
             onClick={() => setFilterHealth(filterHealth === 'en-riesgo' ? null : 'en-riesgo')}
             className={`p-2 rounded-lg text-center transition-all ${
               filterHealth === 'en-riesgo'
-                ? 'ring-2 ring-yellow-500 bg-yellow-50'
-                : 'bg-yellow-50/50'
+                ? 'ring-2 ring-esant-gray-400 bg-esant-gray-100'
+                : 'bg-esant-gray-100/50'
             }`}
           >
-            <div className="text-xl font-bold text-yellow-700">{summary.enRiesgo}</div>
-            <div className="text-[10px] text-yellow-600">En riesgo</div>
+            <div className="text-xl font-bold text-esant-gray-700">{summary.enRiesgo}</div>
+            <div className="text-[10px] text-esant-gray-500">En riesgo</div>
           </button>
           <button
             onClick={() => setFilterHealth(filterHealth === 'atrasado' ? null : 'atrasado')}
             className={`p-2 rounded-lg text-center transition-all ${
               filterHealth === 'atrasado'
-                ? 'ring-2 ring-red-500 bg-red-50'
+                ? 'ring-2 ring-esant-red bg-red-50'
                 : 'bg-red-50/50'
             }`}
           >
-            <div className="text-xl font-bold text-red-700">{summary.atrasados}</div>
-            <div className="text-[10px] text-red-600">Atrasados</div>
+            <div className="text-xl font-bold text-esant-red">{summary.atrasados}</div>
+            <div className="text-[10px] text-esant-red">Atrasados</div>
           </button>
         </div>
 
@@ -271,7 +271,7 @@ const SectorCard = ({
         <div className="px-4 pb-2">
           <div className="h-1.5 bg-esant-gray-100 rounded-full overflow-hidden">
             <div
-              className="h-full bg-green-500 rounded-full transition-all"
+              className="h-full bg-esant-gray-600 rounded-full transition-all"
               style={{ width: `${sector.tareas.completionPercent}%` }}
             />
           </div>
@@ -319,7 +319,7 @@ const SectorCard = ({
             {sector.programa.fechaEntregaReal && (
               <div className="flex items-center justify-between text-sm">
                 <span className="text-esant-gray-500">Entrega real:</span>
-                <span className="text-green-600 font-medium">
+                <span className="text-esant-black font-medium">
                   {format(sector.programa.fechaEntregaReal, "d 'de' MMM", { locale: es })}
                 </span>
               </div>
@@ -348,35 +348,35 @@ const SectorCard = ({
                 </button>
               </div>
               <div className="grid grid-cols-5 gap-1 text-center text-xs">
-                <div className="bg-blue-50 rounded p-1.5">
-                  <div className="font-semibold text-blue-700">
+                <div className="bg-esant-gray-100 rounded p-1.5">
+                  <div className="font-semibold text-esant-gray-700">
                     {sector.tareas.byEstado.creada}
                   </div>
-                  <div className="text-blue-600 text-[10px]">Creadas</div>
+                  <div className="text-esant-gray-500 text-[10px]">Creadas</div>
                 </div>
-                <div className="bg-yellow-50 rounded p-1.5">
-                  <div className="font-semibold text-yellow-700">
+                <div className="bg-esant-gray-200 rounded p-1.5">
+                  <div className="font-semibold text-esant-gray-800">
                     {sector.tareas.byEstado.en_progreso}
                   </div>
-                  <div className="text-yellow-600 text-[10px]">Progreso</div>
+                  <div className="text-esant-gray-600 text-[10px]">Progreso</div>
                 </div>
-                <div className="bg-gray-50 rounded p-1.5">
-                  <div className="font-semibold text-gray-700">
+                <div className="bg-esant-gray-50 rounded p-1.5">
+                  <div className="font-semibold text-esant-gray-600">
                     {sector.tareas.byEstado.pausada}
                   </div>
-                  <div className="text-gray-600 text-[10px]">Pausadas</div>
+                  <div className="text-esant-gray-500 text-[10px]">Pausadas</div>
                 </div>
-                <div className="bg-green-50 rounded p-1.5">
-                  <div className="font-semibold text-green-700">
+                <div className="bg-esant-gray-300 rounded p-1.5">
+                  <div className="font-semibold text-esant-black">
                     {sector.tareas.byEstado.completada}
                   </div>
-                  <div className="text-green-600 text-[10px]">Listas</div>
+                  <div className="text-esant-gray-700 text-[10px]">Listas</div>
                 </div>
                 <div className="bg-red-50 rounded p-1.5">
-                  <div className="font-semibold text-red-700">
+                  <div className="font-semibold text-esant-red">
                     {sector.tareas.byEstado.cancelada}
                   </div>
-                  <div className="text-red-600 text-[10px]">Cancel.</div>
+                  <div className="text-esant-red text-[10px]">Cancel.</div>
                 </div>
               </div>
             </div>
@@ -398,23 +398,23 @@ const SectorCard = ({
                 </button>
               </div>
               <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                <div className="bg-green-50 rounded p-2">
-                  <div className="font-semibold text-green-700">
+                <div className="bg-esant-gray-200 rounded p-2">
+                  <div className="font-semibold text-esant-black">
                     {sector.materiales.byEstado.disponible}
                   </div>
-                  <div className="text-green-600 text-[10px]">Disponibles</div>
+                  <div className="text-esant-gray-600 text-[10px]">Disponibles</div>
                 </div>
                 <div className="bg-red-50 rounded p-2">
-                  <div className="font-semibold text-red-700">
+                  <div className="font-semibold text-esant-red">
                     {sector.materiales.byEstado.agotado}
                   </div>
-                  <div className="text-red-600 text-[10px]">Agotados</div>
+                  <div className="text-esant-red text-[10px]">Agotados</div>
                 </div>
-                <div className="bg-yellow-50 rounded p-2">
-                  <div className="font-semibold text-yellow-700">
+                <div className="bg-esant-gray-100 rounded p-2">
+                  <div className="font-semibold text-esant-gray-700">
                     {sector.materiales.byEstado.por_comprar}
                   </div>
-                  <div className="text-yellow-600 text-[10px]">Por comprar</div>
+                  <div className="text-esant-gray-600 text-[10px]">Por comprar</div>
                 </div>
               </div>
             </div>

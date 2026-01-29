@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
+import { format, subDays } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { USER_ROLE_LABELS, USER_ROLE_COLORS, generateWhatsAppLink } from '../../constants';
 import { Icon } from '../../components/common/Icon';
 import { Button } from '../../components/common/Button';
@@ -12,16 +14,61 @@ import {
   useTeamStats,
   useRemoveMember,
 } from '../../hooks/useEquipo';
-import type { User } from '../../types';
+import { useAsistenciaHistory } from '../../hooks/useAsistencia';
+import type { User, Asistencia } from '../../types';
 
 export const EquipoPage = () => {
   const { currentProject } = useProjectStore();
   const { user: currentUser } = useAuthStore();
   const [expandedRoles, setExpandedRoles] = useState<Set<string>>(new Set());
+  const [expandedAbsences, setExpandedAbsences] = useState<Set<string>>(new Set());
 
   // Fetch data
   const { data: roleGroups = [], isLoading } = useTeamMembersByRole(currentProject?.id || '');
   const { data: stats } = useTeamStats(currentProject?.id || '');
+
+  // Fetch attendance history for the last 30 days to calculate absences
+  const endDate = new Date();
+  const startDate = subDays(endDate, 30);
+  const { data: asistenciaHistory = [] } = useAsistenciaHistory(
+    currentProject?.id || '',
+    startDate,
+    endDate
+  );
+
+  // Calculate absences per user
+  const absencesByUser = useMemo(() => {
+    const absences: Record<string, { count: number; dates: Date[] }> = {};
+
+    asistenciaHistory.forEach((record: Asistencia) => {
+      if (!record.presente) {
+        if (!absences[record.trabajadorId]) {
+          absences[record.trabajadorId] = { count: 0, dates: [] };
+        }
+        absences[record.trabajadorId].count++;
+        absences[record.trabajadorId].dates.push(record.fecha);
+      }
+    });
+
+    // Sort dates descending
+    Object.values(absences).forEach(a => {
+      a.dates.sort((d1, d2) => d2.getTime() - d1.getTime());
+    });
+
+    return absences;
+  }, [asistenciaHistory]);
+
+  const toggleAbsences = (userId: string) => {
+    setExpandedAbsences((prev) => {
+      const next = new Set(prev);
+      if (next.has(userId)) {
+        next.delete(userId);
+      } else {
+        next.add(userId);
+      }
+      return next;
+    });
+  };
 
   // Mutations
   const removeMemberMutation = useRemoveMember();
@@ -226,6 +273,52 @@ export const EquipoPage = () => {
                           </button>
                         )}
                       </div>
+
+                      {/* Absences - only for trabajadores and subcontratados */}
+                      {(member.rol === 'trabajador' || member.rol === 'subcontratado') && (
+                        <div className="mb-3">
+                          {absencesByUser[member.id] && absencesByUser[member.id].count > 0 ? (
+                            <div className="bg-red-50 rounded-lg p-3">
+                              <button
+                                onClick={() => toggleAbsences(member.id)}
+                                className="w-full flex items-center justify-between"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Icon name="calendar-x" size={16} className="text-esant-red" />
+                                  <span className="text-sm font-medium text-esant-red">
+                                    {absencesByUser[member.id].count} ausencia{absencesByUser[member.id].count !== 1 ? 's' : ''} (últimos 30 días)
+                                  </span>
+                                </div>
+                                <Icon
+                                  name={expandedAbsences.has(member.id) ? 'chevron-up' : 'chevron-down'}
+                                  size={16}
+                                  className="text-esant-red"
+                                />
+                              </button>
+
+                              {expandedAbsences.has(member.id) && (
+                                <div className="mt-2 pt-2 border-t border-red-100 space-y-1">
+                                  {absencesByUser[member.id].dates.slice(0, 5).map((date, idx) => (
+                                    <div key={idx} className="text-xs text-esant-gray-600">
+                                      {format(date, "EEEE d 'de' MMMM", { locale: es })}
+                                    </div>
+                                  ))}
+                                  {absencesByUser[member.id].dates.length > 5 && (
+                                    <div className="text-xs text-esant-gray-500 italic">
+                                      +{absencesByUser[member.id].dates.length - 5} más...
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="bg-esant-gray-50 rounded-lg p-3 flex items-center gap-2">
+                              <Icon name="check-circle" size={16} className="text-esant-gray-500" />
+                              <span className="text-sm text-esant-gray-600">Sin ausencias (últimos 30 días)</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {/* Contact Actions */}
                       <div className="flex gap-2">

@@ -10,6 +10,8 @@ import { StatusBadge, type ProgramaStatus } from '../../components/common/Status
 import { useProjectStore } from '../../store/useProjectStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useProgramaStore, SECTORS, type SectorStatus, type SectorData } from '../../store/useProgramaStore';
+import { usePendientesByArea } from '../../hooks/usePendientes';
+import { formatCurrency } from '../../constants';
 
 const STATUS_CYCLE: SectorStatus[] = ['pausado', 'en_curso', 'entregado'];
 const STATUS_LABELS: Record<SectorStatus, string> = {
@@ -27,6 +29,15 @@ export const ProgramaPage = () => {
   const [expandedSector, setExpandedSector] = useState<string | null>(null);
   const [editingSector, setEditingSector] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<SectorData>>({});
+
+  // Fetch pendientes for count by sector
+  const { data: pendientesByArea = [] } = usePendientesByArea(currentProject?.id || '');
+
+  // Get pending count for a sector
+  const getPendingCount = (sector: string): number => {
+    const areaData = pendientesByArea.find((a: { area: string; pendientes: unknown[] }) => a.area === sector);
+    return areaData?.pendientes?.filter((p: { estado: string }) => p.estado !== 'completada' && p.estado !== 'cancelada').length || 0;
+  };
 
   // Check if user can edit programa (admin only)
   const canEdit = user?.rol === 'admin';
@@ -65,6 +76,8 @@ export const ProgramaPage = () => {
       fechaInicio: data?.fechaInicio || '',
       fechaEntregaPropuesta: data?.fechaEntregaPropuesta || '',
       obras: data?.obras || '',
+      valorEstimado: data?.valorEstimado,
+      valorActual: data?.valorActual,
     });
     setEditingSector(sectorName);
   };
@@ -180,7 +193,7 @@ export const ProgramaPage = () => {
               className={`${!isLast ? 'border-b border-esant-gray-100' : ''}`}
             >
               <div className="flex items-center justify-between p-4 hover:bg-esant-gray-50 transition-colors">
-                {/* Sector name + delay badge */}
+                {/* Sector name + delay badge + pending count */}
                 <button
                   onClick={() => toggleSectorExpand(sector)}
                   className="flex-1 flex items-center gap-3 text-left"
@@ -192,6 +205,12 @@ export const ProgramaPage = () => {
                   />
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-esant-black">{sector}</span>
+                    {/* Pending count badge */}
+                    {getPendingCount(sector) > 0 && (
+                      <span className="min-w-[20px] h-5 px-1.5 flex items-center justify-center bg-esant-red text-white text-xs font-bold rounded-full">
+                        {getPendingCount(sector)}
+                      </span>
+                    )}
                     {delayDays > 0 && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-esant-red">
                         <Icon name="alert-triangle" size={12} />
@@ -248,6 +267,28 @@ export const ProgramaPage = () => {
                       <div className="text-sm">
                         <span className="text-esant-gray-500">Obras:</span>{' '}
                         <span className="text-esant-gray-800">{sectorData.obras}</span>
+                      </div>
+                    )}
+
+                    {/* Values - Estimado vs Actual */}
+                    {(sectorData?.valorEstimado || sectorData?.valorActual) && (
+                      <div className="grid grid-cols-2 gap-4 text-sm pt-2 border-t border-esant-gray-200">
+                        <div>
+                          <span className="text-esant-gray-500">Valor estimado:</span>{' '}
+                          <span className="font-medium text-esant-black">
+                            {sectorData?.valorEstimado ? formatCurrency(sectorData.valorEstimado) : '—'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-esant-gray-500">Valor actual:</span>{' '}
+                          <span className={`font-medium ${
+                            sectorData?.valorActual && sectorData?.valorEstimado && sectorData.valorActual > sectorData.valorEstimado
+                              ? 'text-esant-red'
+                              : 'text-esant-black'
+                          }`}>
+                            {sectorData?.valorActual ? formatCurrency(sectorData.valorActual) : '—'}
+                          </span>
+                        </div>
                       </div>
                     )}
 
@@ -345,6 +386,33 @@ export const ProgramaPage = () => {
               rows={3}
               className="w-full px-4 py-3 border-2 border-esant-gray-200 rounded-lg text-esant-black placeholder-esant-gray-400 focus:outline-none focus:border-esant-black transition-colors resize-none"
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-esant-gray-600 mb-2">
+                Valor estimado
+              </label>
+              <input
+                type="number"
+                value={editForm.valorEstimado || ''}
+                onChange={(e) => setEditForm({ ...editForm, valorEstimado: e.target.value ? Number(e.target.value) : undefined })}
+                placeholder="0"
+                className="w-full px-4 py-3 border-2 border-esant-gray-200 rounded-lg text-esant-black placeholder-esant-gray-400 focus:outline-none focus:border-esant-black transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-esant-gray-600 mb-2">
+                Valor actual
+              </label>
+              <input
+                type="number"
+                value={editForm.valorActual || ''}
+                onChange={(e) => setEditForm({ ...editForm, valorActual: e.target.value ? Number(e.target.value) : undefined })}
+                placeholder="0"
+                className="w-full px-4 py-3 border-2 border-esant-gray-200 rounded-lg text-esant-black placeholder-esant-gray-400 focus:outline-none focus:border-esant-black transition-colors"
+              />
+            </div>
           </div>
 
           <Button variant="primary" fullWidth onClick={handleSaveEdit}>

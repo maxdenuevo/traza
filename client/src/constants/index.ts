@@ -178,45 +178,65 @@ export const DOCUMENTO_CATEGORIAS = [
 ];
 
 export const PRESUPUESTO_CATEGORIAS = [
-  'diseño',
-  'construccion',
+  'servicio',
+  'mano_de_obra',
   'materiales',
-  'mobiliario',
+  'adicionales',
   'otro'
 ];
 
 export const PRESUPUESTO_CATEGORIA_LABELS: Record<string, string> = {
+  servicio: 'Servicio',
+  mano_de_obra: 'Mano de obra',
+  materiales: 'Materiales',
+  adicionales: 'Adicionales',
+  otro: 'Otro',
+  // Keep old labels for backwards compatibility
   diseño: 'Diseño',
   construccion: 'Construcción',
-  materiales: 'Materiales',
   mobiliario: 'Mobiliario',
-  otro: 'Otro',
 };
 
 export const PRESUPUESTO_CATEGORIA_COLORS: Record<string, StatusColor> = {
-  diseño: {
-    bg: 'bg-purple-50',
-    text: 'text-purple-700',
-    indicator: 'bg-purple-400'
+  servicio: {
+    bg: 'bg-esant-gray-100',
+    text: 'text-esant-gray-700',
+    indicator: 'bg-esant-gray-500'
   },
-  construccion: {
-    bg: 'bg-orange-50',
-    text: 'text-orange-700',
-    indicator: 'bg-orange-400'
+  mano_de_obra: {
+    bg: 'bg-esant-gray-100',
+    text: 'text-esant-gray-700',
+    indicator: 'bg-esant-gray-600'
   },
   materiales: {
-    bg: 'bg-blue-50',
-    text: 'text-blue-700',
-    indicator: 'bg-blue-400'
+    bg: 'bg-esant-gray-100',
+    text: 'text-esant-gray-700',
+    indicator: 'bg-esant-gray-400'
   },
-  mobiliario: {
-    bg: 'bg-green-50',
-    text: 'text-green-700',
-    indicator: 'bg-esant-green'
+  adicionales: {
+    bg: 'bg-red-50',
+    text: 'text-esant-red',
+    indicator: 'bg-esant-red'
   },
   otro: {
-    bg: 'bg-esant-gray-100',
+    bg: 'bg-esant-gray-50',
     text: 'text-esant-gray-600',
+    indicator: 'bg-esant-gray-300'
+  },
+  // Keep old colors for backwards compatibility
+  diseño: {
+    bg: 'bg-esant-gray-100',
+    text: 'text-esant-gray-700',
+    indicator: 'bg-esant-gray-500'
+  },
+  construccion: {
+    bg: 'bg-esant-gray-100',
+    text: 'text-esant-gray-700',
+    indicator: 'bg-esant-gray-600'
+  },
+  mobiliario: {
+    bg: 'bg-esant-gray-100',
+    text: 'text-esant-gray-700',
     indicator: 'bg-esant-gray-400'
   }
 };
