@@ -1,230 +1,718 @@
--- =====================================================
--- TRAZA Database Schema for Supabase
--- Complete schema with RLS policies (NO RECURSION)
--- =====================================================
--- Execute this entire file in your Supabase SQL Editor
--- =====================================================
+-- ============================================================================
+-- ESANT MARIA - Schema SQL para Supabase
+-- ============================================================================
+-- Este schema está ordenado por dependencias y puede ejecutarse directamente.
+-- Requisitos: Supabase project con auth habilitado
+-- ============================================================================
 
--- Enable UUID extension
+-- ============================================================================
+-- EXTENSIONES
+-- ============================================================================
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- ==================== TABLES ====================
+-- ============================================================================
+-- NIVEL 0: Tablas sin dependencias externas
+-- ============================================================================
 
--- Profiles (extends auth.users)
-CREATE TABLE IF NOT EXISTS profiles (
-  id UUID REFERENCES auth.users(id) PRIMARY KEY,
-  email TEXT NOT NULL,
-  nombre TEXT NOT NULL,
-  rol TEXT NOT NULL CHECK (rol IN ('admin', 'jefe_proyecto', 'especialista', 'cliente')),
-  telefono TEXT NOT NULL,
-  especialidad TEXT,
-  avatar TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+-- Proyectos de construcción
+CREATE TABLE public.proyectos (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  nombre text NOT NULL,
+  cliente text NOT NULL,
+  estado text NOT NULL CHECK (estado = ANY (ARRAY['planificacion'::text, 'en_obra'::text, 'pausado'::text, 'terminado'::text])),
+  fecha_inicio timestamp with time zone NOT NULL,
+  fecha_estimada_fin timestamp with time zone,
+  direccion text,
+  descripcion text,
+  presupuesto_total numeric,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT proyectos_pkey PRIMARY KEY (id)
 );
 
--- Proyectos
-CREATE TABLE IF NOT EXISTS proyectos (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  nombre TEXT NOT NULL,
-  cliente TEXT NOT NULL,
-  estado TEXT NOT NULL CHECK (estado IN ('planificacion', 'en_obra', 'pausado', 'terminado')),
-  fecha_inicio TIMESTAMP WITH TIME ZONE NOT NULL,
-  fecha_estimada_fin TIMESTAMP WITH TIME ZONE,
-  direccion TEXT,
-  descripcion TEXT,
-  presupuesto_total NUMERIC(12, 2),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+-- ============================================================================
+-- NIVEL 1: Tablas que dependen solo de auth.users
+-- ============================================================================
+
+-- Perfiles de usuario (extiende auth.users)
+CREATE TABLE public.profiles (
+  id uuid NOT NULL,
+  email text NOT NULL,
+  nombre text NOT NULL,
+  rol text NOT NULL CHECK (rol = ANY (ARRAY['admin'::text, 'jefe_proyecto'::text, 'especialista'::text, 'trabajador'::text, 'subcontratado'::text, 'cliente'::text])),
+  telefono text NOT NULL,
+  especialidad text,
+  avatar text,
+  rut text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT profiles_pkey PRIMARY KEY (id),
+  CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE
 );
 
--- Junction table: proyectos <-> usuarios
-CREATE TABLE IF NOT EXISTS proyecto_usuarios (
-  proyecto_id UUID REFERENCES proyectos(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  PRIMARY KEY (proyecto_id, user_id)
+-- ============================================================================
+-- NIVEL 2: Tablas que dependen de proyectos y/o profiles
+-- ============================================================================
+
+-- Relación muchos a muchos: usuarios asignados a proyectos
+CREATE TABLE public.proyecto_usuarios (
+  proyecto_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT proyecto_usuarios_pkey PRIMARY KEY (proyecto_id, user_id),
+  CONSTRAINT proyecto_usuarios_proyecto_id_fkey FOREIGN KEY (proyecto_id) REFERENCES public.proyectos(id) ON DELETE CASCADE,
+  CONSTRAINT proyecto_usuarios_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE
 );
 
--- Visitas
-CREATE TABLE IF NOT EXISTS visitas (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  proyecto_id UUID REFERENCES proyectos(id) ON DELETE CASCADE NOT NULL,
-  fecha TIMESTAMP WITH TIME ZONE NOT NULL,
-  hora TEXT,
-  estado TEXT NOT NULL CHECK (estado IN ('programada', 'en_curso', 'completada')),
-  notas_generales TEXT,
-  creado_por UUID REFERENCES profiles(id) NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+-- Visitas a obra (calendario)
+CREATE TABLE public.visitas (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  proyecto_id uuid NOT NULL,
+  fecha timestamp with time zone NOT NULL,
+  hora text,
+  estado text NOT NULL CHECK (estado = ANY (ARRAY['programada'::text, 'en_curso'::text, 'completada'::text])),
+  notas_generales text,
+  creado_por uuid NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT visitas_pkey PRIMARY KEY (id),
+  CONSTRAINT visitas_proyecto_id_fkey FOREIGN KEY (proyecto_id) REFERENCES public.proyectos(id) ON DELETE CASCADE,
+  CONSTRAINT visitas_creado_por_fkey FOREIGN KEY (creado_por) REFERENCES public.profiles(id)
 );
 
--- Asuntos (issues from visits)
-CREATE TABLE IF NOT EXISTS asuntos (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  visita_id UUID REFERENCES visitas(id) ON DELETE CASCADE NOT NULL,
-  area TEXT NOT NULL,
-  descripcion TEXT NOT NULL,
-  encargado_id UUID REFERENCES profiles(id),
-  notas_adicionales TEXT,
-  convertido_a_pendiente BOOLEAN DEFAULT FALSE,
-  pendiente_id UUID,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+-- Items de checkbox (verificación diaria/semanal/etc)
+CREATE TABLE public.checkbox_items (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  proyecto_id uuid NOT NULL,
+  sector_nombre text,
+  descripcion text NOT NULL,
+  periodicidad text NOT NULL DEFAULT 'diario'::text CHECK (periodicidad = ANY (ARRAY['diario'::text, 'semanal'::text, 'quincenal'::text, 'mensual'::text])),
+  activo boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT checkbox_items_pkey PRIMARY KEY (id),
+  CONSTRAINT checkbox_items_proyecto_id_fkey FOREIGN KEY (proyecto_id) REFERENCES public.proyectos(id) ON DELETE CASCADE
 );
 
--- Pendientes (tasks)
-CREATE TABLE IF NOT EXISTS pendientes (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  proyecto_id UUID REFERENCES proyectos(id) ON DELETE CASCADE NOT NULL,
-  area TEXT NOT NULL,
-  tarea TEXT NOT NULL,
-  descripcion TEXT,
-  encargado_id UUID REFERENCES profiles(id) NOT NULL,
-  estado TEXT NOT NULL CHECK (estado IN ('pausa', 'en_obra', 'terminado')),
-  prioridad TEXT CHECK (prioridad IN ('baja', 'media', 'alta')),
-  fecha_creacion TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  fecha_vencimiento TIMESTAMP WITH TIME ZONE,
-  fecha_completado TIMESTAMP WITH TIME ZONE,
-  notas_adicionales TEXT,
-  creado_por UUID REFERENCES profiles(id) NOT NULL,
-  visita_id UUID REFERENCES visitas(id),
-  asunto_id UUID REFERENCES asuntos(id),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+-- Documentos y archivos
+CREATE TABLE public.documentos (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  proyecto_id uuid NOT NULL,
+  nombre text NOT NULL,
+  tipo text NOT NULL CHECK (tipo = ANY (ARRAY['pdf'::text, 'docx'::text, 'xlsx'::text, 'dwg'::text, 'jpg'::text, 'png'::text, 'otro'::text])),
+  categoria text NOT NULL CHECK (categoria = ANY (ARRAY['planos'::text, 'permisos'::text, 'anteproyecto'::text, 'presupuesto'::text, 'contratos'::text, 'fotos'::text, 'otro'::text])),
+  url text NOT NULL,
+  tamaño bigint NOT NULL,
+  estado text CHECK (estado = ANY (ARRAY['borrador'::text, 'revision'::text, 'aprobado'::text, 'vigente'::text, 'vencido'::text])),
+  fecha_aprobacion timestamp with time zone,
+  subio_por uuid NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT documentos_pkey PRIMARY KEY (id),
+  CONSTRAINT documentos_proyecto_id_fkey FOREIGN KEY (proyecto_id) REFERENCES public.proyectos(id) ON DELETE CASCADE,
+  CONSTRAINT documentos_subio_por_fkey FOREIGN KEY (subio_por) REFERENCES public.profiles(id)
 );
 
--- Documentos
-CREATE TABLE IF NOT EXISTS documentos (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  proyecto_id UUID REFERENCES proyectos(id) ON DELETE CASCADE NOT NULL,
-  nombre TEXT NOT NULL,
-  tipo TEXT NOT NULL CHECK (tipo IN ('pdf', 'docx', 'xlsx', 'dwg', 'jpg', 'png', 'otro')),
-  categoria TEXT NOT NULL CHECK (categoria IN ('planos', 'permisos', 'anteproyecto', 'presupuesto', 'contratos', 'fotos', 'otro')),
-  url TEXT NOT NULL,
-  tamaño BIGINT NOT NULL,
-  estado TEXT CHECK (estado IN ('borrador', 'revision', 'aprobado', 'vigente', 'vencido')),
-  fecha_aprobacion TIMESTAMP WITH TIME ZONE,
-  subio_por UUID REFERENCES profiles(id) NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+-- Facturas por proveedor
+CREATE TABLE public.facturas (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  proyecto_id uuid NOT NULL,
+  numero text NOT NULL,
+  fecha date NOT NULL,
+  valor numeric NOT NULL,
+  valor_con_iva numeric NOT NULL,
+  proveedor text NOT NULL,
+  pagado_por text,
+  detalle text,
+  sucursal text,
+  rut text,
+  direccion text,
+  archivo_url text,
+  sector_nombre text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT facturas_pkey PRIMARY KEY (id),
+  CONSTRAINT facturas_proyecto_id_fkey FOREIGN KEY (proyecto_id) REFERENCES public.proyectos(id) ON DELETE CASCADE
 );
 
--- Notas
-CREATE TABLE IF NOT EXISTS notas (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  proyecto_id UUID REFERENCES proyectos(id) ON DELETE CASCADE NOT NULL,
-  contenido TEXT NOT NULL,
-  area TEXT,
-  autor_id UUID REFERENCES profiles(id) NOT NULL,
-  convertida_a_pendiente BOOLEAN DEFAULT FALSE,
-  pendiente_id UUID REFERENCES pendientes(id),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+-- Informes generados
+CREATE TABLE public.informes (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  proyecto_id uuid NOT NULL,
+  numero integer NOT NULL,
+  fecha date NOT NULL,
+  periodicidad text NOT NULL CHECK (periodicidad = ANY (ARRAY['diario'::text, 'semanal'::text, 'quincenal'::text, 'mensual'::text])),
+  contenido jsonb NOT NULL DEFAULT '{}'::jsonb,
+  archivo_url text,
+  generado_por uuid NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT informes_pkey PRIMARY KEY (id),
+  CONSTRAINT informes_proyecto_id_fkey FOREIGN KEY (proyecto_id) REFERENCES public.proyectos(id) ON DELETE CASCADE,
+  CONSTRAINT informes_generado_por_fkey FOREIGN KEY (generado_por) REFERENCES public.profiles(id)
 );
 
--- Notificaciones
-CREATE TABLE IF NOT EXISTS notificaciones (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  usuario_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
-  tipo TEXT NOT NULL CHECK (tipo IN ('tarea_asignada', 'tarea_actualizada', 'visita_programada', 'documento_subido', 'presupuesto_actualizado', 'mensaje')),
-  titulo TEXT NOT NULL,
-  mensaje TEXT NOT NULL,
-  leida BOOLEAN DEFAULT FALSE,
-  metadata JSONB,
-  enlace_accion TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+-- Notificaciones para usuarios
+CREATE TABLE public.notificaciones (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  usuario_id uuid NOT NULL,
+  tipo text NOT NULL CHECK (tipo = ANY (ARRAY['tarea_asignada'::text, 'tarea_actualizada'::text, 'visita_programada'::text, 'documento_subido'::text, 'presupuesto_actualizado'::text, 'mensaje'::text])),
+  titulo text NOT NULL,
+  mensaje text NOT NULL,
+  leida boolean DEFAULT false,
+  metadata jsonb,
+  enlace_accion text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT notificaciones_pkey PRIMARY KEY (id),
+  CONSTRAINT notificaciones_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES public.profiles(id) ON DELETE CASCADE
 );
 
--- Presupuesto Items
-CREATE TABLE IF NOT EXISTS presupuesto_items (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  proyecto_id UUID REFERENCES proyectos(id) ON DELETE CASCADE NOT NULL,
-  categoria TEXT NOT NULL CHECK (categoria IN ('diseño', 'construccion', 'materiales', 'mobiliario', 'otro')),
-  descripcion TEXT NOT NULL,
-  monto_estimado NUMERIC(12, 2) NOT NULL,
-  monto_real NUMERIC(12, 2),
-  porcentaje_ejecutado INTEGER DEFAULT 0 CHECK (porcentaje_ejecutado >= 0 AND porcentaje_ejecutado <= 100),
-  archivo_url TEXT,
-  notifica_cambios BOOLEAN DEFAULT FALSE,
-  ultima_actualizacion TIMESTAMP WITH TIME ZONE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+-- Items de presupuesto
+CREATE TABLE public.presupuesto_items (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  proyecto_id uuid NOT NULL,
+  categoria text NOT NULL CHECK (categoria = ANY (ARRAY['servicio'::text, 'mano_de_obra'::text, 'materiales'::text, 'adicionales'::text, 'diseño'::text, 'construccion'::text, 'mobiliario'::text, 'otro'::text])),
+  descripcion text NOT NULL,
+  monto_estimado numeric NOT NULL,
+  monto_real numeric,
+  porcentaje_ejecutado integer DEFAULT 0 CHECK (porcentaje_ejecutado >= 0 AND porcentaje_ejecutado <= 100),
+  archivo_url text,
+  notifica_cambios boolean DEFAULT false,
+  ultima_actualizacion timestamp with time zone,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT presupuesto_items_pkey PRIMARY KEY (id),
+  CONSTRAINT presupuesto_items_proyecto_id_fkey FOREIGN KEY (proyecto_id) REFERENCES public.proyectos(id) ON DELETE CASCADE
 );
 
--- Permisos
-CREATE TABLE IF NOT EXISTS permisos (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  proyecto_id UUID REFERENCES proyectos(id) ON DELETE CASCADE NOT NULL,
-  nombre TEXT NOT NULL,
-  tipo TEXT NOT NULL CHECK (tipo IN ('edificacion', 'municipal', 'recepcion_obra', 'otro')),
-  estado TEXT NOT NULL CHECK (estado IN ('pendiente', 'en_tramite', 'aprobado', 'vencido')),
-  fecha_solicitud TIMESTAMP WITH TIME ZONE,
-  fecha_aprobacion TIMESTAMP WITH TIME ZONE,
-  fecha_vencimiento TIMESTAMP WITH TIME ZONE,
-  vigencia_meses INTEGER,
-  documento_id UUID REFERENCES documentos(id),
-  notas TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+-- Programa de obra por sector
+CREATE TABLE public.programa_sectores (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  proyecto_id uuid NOT NULL,
+  sector_nombre text NOT NULL,
+  fecha_inicio date,
+  fecha_entrega_propuesta date,
+  fecha_entrega_real date,
+  obras text,
+  valor_estimado numeric,
+  valor_actual numeric,
+  status text NOT NULL DEFAULT 'pendiente'::text CHECK (status = ANY (ARRAY['pendiente'::text, 'en_curso'::text, 'pausado'::text, 'entregado'::text, 'cancelado'::text])),
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT programa_sectores_pkey PRIMARY KEY (id),
+  CONSTRAINT programa_sectores_proyecto_id_fkey FOREIGN KEY (proyecto_id) REFERENCES public.proyectos(id) ON DELETE CASCADE
 );
 
--- ==================== INDEXES ====================
+-- Control de asistencia de trabajadores
+CREATE TABLE public.asistencia (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  proyecto_id uuid NOT NULL,
+  trabajador_id uuid NOT NULL,
+  fecha date NOT NULL,
+  presente boolean NOT NULL DEFAULT false,
+  registrado_por uuid NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT asistencia_pkey PRIMARY KEY (id),
+  CONSTRAINT asistencia_proyecto_id_fkey FOREIGN KEY (proyecto_id) REFERENCES public.proyectos(id) ON DELETE CASCADE,
+  CONSTRAINT asistencia_trabajador_id_fkey FOREIGN KEY (trabajador_id) REFERENCES public.profiles(id),
+  CONSTRAINT asistencia_registrado_por_fkey FOREIGN KEY (registrado_por) REFERENCES public.profiles(id),
+  CONSTRAINT asistencia_unique_fecha UNIQUE (proyecto_id, trabajador_id, fecha)
+);
 
-CREATE INDEX IF NOT EXISTS idx_proyecto_usuarios_user ON proyecto_usuarios(user_id);
-CREATE INDEX IF NOT EXISTS idx_proyecto_usuarios_proyecto ON proyecto_usuarios(proyecto_id);
-CREATE INDEX IF NOT EXISTS idx_visitas_proyecto ON visitas(proyecto_id);
-CREATE INDEX IF NOT EXISTS idx_visitas_fecha ON visitas(fecha);
-CREATE INDEX IF NOT EXISTS idx_asuntos_visita ON asuntos(visita_id);
-CREATE INDEX IF NOT EXISTS idx_pendientes_proyecto ON pendientes(proyecto_id);
-CREATE INDEX IF NOT EXISTS idx_pendientes_encargado ON pendientes(encargado_id);
-CREATE INDEX IF NOT EXISTS idx_pendientes_estado ON pendientes(estado);
-CREATE INDEX IF NOT EXISTS idx_documentos_proyecto ON documentos(proyecto_id);
-CREATE INDEX IF NOT EXISTS idx_documentos_categoria ON documentos(categoria);
-CREATE INDEX IF NOT EXISTS idx_notas_proyecto ON notas(proyecto_id);
-CREATE INDEX IF NOT EXISTS idx_notificaciones_usuario ON notificaciones(usuario_id);
-CREATE INDEX IF NOT EXISTS idx_notificaciones_leida ON notificaciones(leida);
-CREATE INDEX IF NOT EXISTS idx_presupuesto_proyecto ON presupuesto_items(proyecto_id);
-CREATE INDEX IF NOT EXISTS idx_permisos_proyecto ON permisos(proyecto_id);
+-- ============================================================================
+-- NIVEL 3: Tablas que dependen del nivel 2
+-- ============================================================================
 
--- ==================== TRIGGERS ====================
+-- Asuntos tratados en visitas
+CREATE TABLE public.asuntos (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  visita_id uuid NOT NULL,
+  area text NOT NULL,
+  descripcion text NOT NULL,
+  encargado_id uuid,
+  notas_adicionales text,
+  convertido_a_pendiente boolean DEFAULT false,
+  pendiente_id uuid,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT asuntos_pkey PRIMARY KEY (id),
+  CONSTRAINT asuntos_visita_id_fkey FOREIGN KEY (visita_id) REFERENCES public.visitas(id) ON DELETE CASCADE,
+  CONSTRAINT asuntos_encargado_id_fkey FOREIGN KEY (encargado_id) REFERENCES public.profiles(id)
+);
 
--- Trigger function for updated_at
-CREATE OR REPLACE FUNCTION update_updated_at_column()
+-- Registros de verificación de checkbox
+CREATE TABLE public.checkbox_checks (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  item_id uuid NOT NULL,
+  fecha date NOT NULL,
+  completado boolean NOT NULL DEFAULT false,
+  checked_by uuid NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT checkbox_checks_pkey PRIMARY KEY (id),
+  CONSTRAINT checkbox_checks_item_id_fkey FOREIGN KEY (item_id) REFERENCES public.checkbox_items(id) ON DELETE CASCADE,
+  CONSTRAINT checkbox_checks_checked_by_fkey FOREIGN KEY (checked_by) REFERENCES public.profiles(id),
+  CONSTRAINT checkbox_checks_unique_fecha UNIQUE (item_id, fecha)
+);
+
+-- Inventario de materiales
+CREATE TABLE public.materiales (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  proyecto_id uuid NOT NULL,
+  codigo text,
+  descripcion text NOT NULL,
+  marca text,
+  modelo text,
+  sucursal text,
+  cantidad numeric NOT NULL DEFAULT 0,
+  proveedor text,
+  ubicacion text,
+  factura_id uuid,
+  sector_nombre text,
+  estado text NOT NULL DEFAULT 'disponible'::text CHECK (estado = ANY (ARRAY['disponible'::text, 'agotado'::text, 'por_comprar'::text])),
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT materiales_pkey PRIMARY KEY (id),
+  CONSTRAINT materiales_proyecto_id_fkey FOREIGN KEY (proyecto_id) REFERENCES public.proyectos(id) ON DELETE CASCADE,
+  CONSTRAINT materiales_factura_id_fkey FOREIGN KEY (factura_id) REFERENCES public.facturas(id) ON DELETE SET NULL
+);
+
+-- Permisos de construcción (edificación, municipal, etc)
+CREATE TABLE public.permisos (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  proyecto_id uuid NOT NULL,
+  nombre text NOT NULL,
+  tipo text NOT NULL CHECK (tipo = ANY (ARRAY['edificacion'::text, 'municipal'::text, 'recepcion_obra'::text, 'otro'::text])),
+  estado text NOT NULL CHECK (estado = ANY (ARRAY['pendiente'::text, 'en_tramite'::text, 'aprobado'::text, 'vencido'::text])),
+  fecha_solicitud timestamp with time zone,
+  fecha_aprobacion timestamp with time zone,
+  fecha_vencimiento timestamp with time zone,
+  vigencia_meses integer,
+  documento_id uuid,
+  notas text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT permisos_pkey PRIMARY KEY (id),
+  CONSTRAINT permisos_proyecto_id_fkey FOREIGN KEY (proyecto_id) REFERENCES public.proyectos(id) ON DELETE CASCADE,
+  CONSTRAINT permisos_documento_id_fkey FOREIGN KEY (documento_id) REFERENCES public.documentos(id) ON DELETE SET NULL
+);
+
+-- ============================================================================
+-- NIVEL 4: Tablas que dependen del nivel 3
+-- ============================================================================
+
+-- Pendientes (tareas) por sector
+CREATE TABLE public.pendientes (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  proyecto_id uuid NOT NULL,
+  area text NOT NULL,
+  tarea text NOT NULL,
+  descripcion text,
+  encargado_id uuid NOT NULL,
+  estado text NOT NULL CHECK (estado = ANY (ARRAY['creada'::text, 'en_progreso'::text, 'pausada'::text, 'completada'::text, 'cancelada'::text])),
+  prioridad text CHECK (prioridad = ANY (ARRAY['baja'::text, 'media'::text, 'alta'::text])),
+  fecha_creacion timestamp with time zone NOT NULL DEFAULT now(),
+  fecha_vencimiento timestamp with time zone,
+  fecha_completado timestamp with time zone,
+  notas_adicionales text,
+  attachments text[],
+  creado_por uuid NOT NULL,
+  visita_id uuid,
+  asunto_id uuid,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT pendientes_pkey PRIMARY KEY (id),
+  CONSTRAINT pendientes_proyecto_id_fkey FOREIGN KEY (proyecto_id) REFERENCES public.proyectos(id) ON DELETE CASCADE,
+  CONSTRAINT pendientes_encargado_id_fkey FOREIGN KEY (encargado_id) REFERENCES public.profiles(id),
+  CONSTRAINT pendientes_creado_por_fkey FOREIGN KEY (creado_por) REFERENCES public.profiles(id),
+  CONSTRAINT pendientes_visita_id_fkey FOREIGN KEY (visita_id) REFERENCES public.visitas(id) ON DELETE SET NULL,
+  CONSTRAINT pendientes_asunto_id_fkey FOREIGN KEY (asunto_id) REFERENCES public.asuntos(id) ON DELETE SET NULL
+);
+
+-- ============================================================================
+-- NIVEL 5: Tablas que dependen del nivel 4
+-- ============================================================================
+
+-- Historial de pausas de pendientes
+CREATE TABLE public.pause_logs (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  pendiente_id uuid NOT NULL,
+  paused_at timestamp with time zone NOT NULL DEFAULT now(),
+  resumed_at timestamp with time zone,
+  motivo text,
+  paused_by uuid NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT pause_logs_pkey PRIMARY KEY (id),
+  CONSTRAINT pause_logs_pendiente_id_fkey FOREIGN KEY (pendiente_id) REFERENCES public.pendientes(id) ON DELETE CASCADE,
+  CONSTRAINT pause_logs_paused_by_fkey FOREIGN KEY (paused_by) REFERENCES public.profiles(id)
+);
+
+-- Notas rápidas (legacy - fusionado con pendientes)
+CREATE TABLE public.notas (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  proyecto_id uuid NOT NULL,
+  contenido text NOT NULL,
+  area text,
+  autor_id uuid NOT NULL,
+  convertida_a_pendiente boolean DEFAULT false,
+  pendiente_id uuid,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT notas_pkey PRIMARY KEY (id),
+  CONSTRAINT notas_proyecto_id_fkey FOREIGN KEY (proyecto_id) REFERENCES public.proyectos(id) ON DELETE CASCADE,
+  CONSTRAINT notas_autor_id_fkey FOREIGN KEY (autor_id) REFERENCES public.profiles(id),
+  CONSTRAINT notas_pendiente_id_fkey FOREIGN KEY (pendiente_id) REFERENCES public.pendientes(id) ON DELETE SET NULL
+);
+
+-- ============================================================================
+-- ÍNDICES PARA PERFORMANCE
+-- ============================================================================
+
+-- Búsquedas frecuentes por proyecto
+CREATE INDEX idx_visitas_proyecto ON public.visitas(proyecto_id);
+CREATE INDEX idx_pendientes_proyecto ON public.pendientes(proyecto_id);
+CREATE INDEX idx_pendientes_area ON public.pendientes(proyecto_id, area);
+CREATE INDEX idx_pendientes_encargado ON public.pendientes(encargado_id);
+CREATE INDEX idx_pendientes_estado ON public.pendientes(proyecto_id, estado);
+CREATE INDEX idx_materiales_proyecto ON public.materiales(proyecto_id);
+CREATE INDEX idx_facturas_proyecto ON public.facturas(proyecto_id);
+CREATE INDEX idx_facturas_proveedor ON public.facturas(proyecto_id, proveedor);
+CREATE INDEX idx_asistencia_proyecto_fecha ON public.asistencia(proyecto_id, fecha);
+CREATE INDEX idx_checkbox_checks_fecha ON public.checkbox_checks(item_id, fecha);
+CREATE INDEX idx_programa_sectores_proyecto ON public.programa_sectores(proyecto_id);
+CREATE INDEX idx_documentos_proyecto ON public.documentos(proyecto_id);
+CREATE INDEX idx_notificaciones_usuario ON public.notificaciones(usuario_id, leida);
+
+-- ============================================================================
+-- ROW LEVEL SECURITY (RLS)
+-- ============================================================================
+-- Habilitar RLS en todas las tablas
+ALTER TABLE public.proyectos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.proyecto_usuarios ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.visitas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.asuntos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.pendientes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.pause_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.checkbox_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.checkbox_checks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.asistencia ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.materiales ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.facturas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.documentos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.permisos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.informes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.presupuesto_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.programa_sectores ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.notificaciones ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.notas ENABLE ROW LEVEL SECURITY;
+
+-- ============================================================================
+-- POLÍTICAS RLS
+-- ============================================================================
+
+-- Profiles: usuarios pueden ver todos los profiles, solo editar el propio
+CREATE POLICY "Profiles son visibles para usuarios autenticados"
+  ON public.profiles FOR SELECT
+  TO authenticated
+  USING (true);
+
+CREATE POLICY "Usuarios pueden actualizar su propio profile"
+  ON public.profiles FOR UPDATE
+  TO authenticated
+  USING (auth.uid() = id);
+
+CREATE POLICY "Usuarios pueden insertar su propio profile"
+  ON public.profiles FOR INSERT
+  TO authenticated
+  WITH CHECK (auth.uid() = id);
+
+-- Proyectos: usuarios ven proyectos donde están asignados
+CREATE POLICY "Usuarios ven proyectos asignados"
+  ON public.proyectos FOR SELECT
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.proyecto_usuarios
+      WHERE proyecto_id = proyectos.id AND user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Admins pueden crear proyectos"
+  ON public.proyectos FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid() AND rol = 'admin'
+    )
+  );
+
+CREATE POLICY "Admins y jefes pueden actualizar proyectos"
+  ON public.proyectos FOR UPDATE
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid() AND rol IN ('admin', 'jefe_proyecto')
+    )
+    AND EXISTS (
+      SELECT 1 FROM public.proyecto_usuarios
+      WHERE proyecto_id = proyectos.id AND user_id = auth.uid()
+    )
+  );
+
+-- Proyecto usuarios: control de asignaciones
+CREATE POLICY "Ver asignaciones de proyectos propios"
+  ON public.proyecto_usuarios FOR SELECT
+  TO authenticated
+  USING (user_id = auth.uid() OR EXISTS (
+    SELECT 1 FROM public.proyecto_usuarios pu
+    WHERE pu.proyecto_id = proyecto_usuarios.proyecto_id AND pu.user_id = auth.uid()
+  ));
+
+CREATE POLICY "Admins gestionan asignaciones"
+  ON public.proyecto_usuarios FOR ALL
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid() AND rol IN ('admin', 'jefe_proyecto')
+    )
+  );
+
+-- Política genérica para tablas dependientes de proyecto
+-- (visitas, pendientes, materiales, facturas, etc.)
+
+CREATE POLICY "Acceso a visitas por proyecto"
+  ON public.visitas FOR ALL
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.proyecto_usuarios
+      WHERE proyecto_id = visitas.proyecto_id AND user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Acceso a asuntos por proyecto"
+  ON public.asuntos FOR ALL
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.visitas v
+      JOIN public.proyecto_usuarios pu ON pu.proyecto_id = v.proyecto_id
+      WHERE v.id = asuntos.visita_id AND pu.user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Acceso a pendientes por proyecto"
+  ON public.pendientes FOR ALL
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.proyecto_usuarios
+      WHERE proyecto_id = pendientes.proyecto_id AND user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Acceso a pause_logs por proyecto"
+  ON public.pause_logs FOR ALL
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.pendientes p
+      JOIN public.proyecto_usuarios pu ON pu.proyecto_id = p.proyecto_id
+      WHERE p.id = pause_logs.pendiente_id AND pu.user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Acceso a checkbox_items por proyecto"
+  ON public.checkbox_items FOR ALL
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.proyecto_usuarios
+      WHERE proyecto_id = checkbox_items.proyecto_id AND user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Acceso a checkbox_checks por proyecto"
+  ON public.checkbox_checks FOR ALL
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.checkbox_items ci
+      JOIN public.proyecto_usuarios pu ON pu.proyecto_id = ci.proyecto_id
+      WHERE ci.id = checkbox_checks.item_id AND pu.user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Acceso a asistencia por proyecto"
+  ON public.asistencia FOR ALL
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.proyecto_usuarios
+      WHERE proyecto_id = asistencia.proyecto_id AND user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Acceso a materiales por proyecto"
+  ON public.materiales FOR ALL
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.proyecto_usuarios
+      WHERE proyecto_id = materiales.proyecto_id AND user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Acceso a facturas por proyecto"
+  ON public.facturas FOR ALL
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.proyecto_usuarios
+      WHERE proyecto_id = facturas.proyecto_id AND user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Acceso a documentos por proyecto"
+  ON public.documentos FOR ALL
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.proyecto_usuarios
+      WHERE proyecto_id = documentos.proyecto_id AND user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Acceso a permisos por proyecto"
+  ON public.permisos FOR ALL
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.proyecto_usuarios
+      WHERE proyecto_id = permisos.proyecto_id AND user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Acceso a informes por proyecto"
+  ON public.informes FOR ALL
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.proyecto_usuarios
+      WHERE proyecto_id = informes.proyecto_id AND user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Acceso a presupuesto_items por proyecto"
+  ON public.presupuesto_items FOR ALL
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.proyecto_usuarios
+      WHERE proyecto_id = presupuesto_items.proyecto_id AND user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Acceso a programa_sectores por proyecto"
+  ON public.programa_sectores FOR ALL
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.proyecto_usuarios
+      WHERE proyecto_id = programa_sectores.proyecto_id AND user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Usuarios ven sus notificaciones"
+  ON public.notificaciones FOR SELECT
+  TO authenticated
+  USING (usuario_id = auth.uid());
+
+CREATE POLICY "Sistema puede crear notificaciones"
+  ON public.notificaciones FOR INSERT
+  TO authenticated
+  WITH CHECK (true);
+
+CREATE POLICY "Usuarios actualizan sus notificaciones"
+  ON public.notificaciones FOR UPDATE
+  TO authenticated
+  USING (usuario_id = auth.uid());
+
+CREATE POLICY "Acceso a notas por proyecto"
+  ON public.notas FOR ALL
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.proyecto_usuarios
+      WHERE proyecto_id = notas.proyecto_id AND user_id = auth.uid()
+    )
+  );
+
+-- ============================================================================
+-- TRIGGERS PARA updated_at
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION public.handle_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
-  NEW.updated_at = NOW();
+  NEW.updated_at = now();
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
--- Apply triggers to tables with updated_at
-CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON profiles
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER set_updated_at_proyectos
+  BEFORE UPDATE ON public.proyectos
+  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
-CREATE TRIGGER update_proyectos_updated_at BEFORE UPDATE ON proyectos
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER set_updated_at_profiles
+  BEFORE UPDATE ON public.profiles
+  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
-CREATE TRIGGER update_visitas_updated_at BEFORE UPDATE ON visitas
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER set_updated_at_visitas
+  BEFORE UPDATE ON public.visitas
+  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
-CREATE TRIGGER update_pendientes_updated_at BEFORE UPDATE ON pendientes
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER set_updated_at_pendientes
+  BEFORE UPDATE ON public.pendientes
+  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
-CREATE TRIGGER update_documentos_updated_at BEFORE UPDATE ON documentos
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER set_updated_at_checkbox_items
+  BEFORE UPDATE ON public.checkbox_items
+  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
-CREATE TRIGGER update_notas_updated_at BEFORE UPDATE ON notas
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER set_updated_at_materiales
+  BEFORE UPDATE ON public.materiales
+  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
-CREATE TRIGGER update_presupuesto_items_updated_at BEFORE UPDATE ON presupuesto_items
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER set_updated_at_facturas
+  BEFORE UPDATE ON public.facturas
+  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
-CREATE TRIGGER update_permisos_updated_at BEFORE UPDATE ON permisos
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER set_updated_at_documentos
+  BEFORE UPDATE ON public.documentos
+  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
--- ==================== AUTH FUNCTION ====================
+CREATE TRIGGER set_updated_at_permisos
+  BEFORE UPDATE ON public.permisos
+  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
--- Auto-create profile on user signup
+CREATE TRIGGER set_updated_at_presupuesto_items
+  BEFORE UPDATE ON public.presupuesto_items
+  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+
+CREATE TRIGGER set_updated_at_programa_sectores
+  BEFORE UPDATE ON public.programa_sectores
+  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+
+CREATE TRIGGER set_updated_at_notas
+  BEFORE UPDATE ON public.notas
+  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+
+-- ============================================================================
+-- TRIGGER PARA CREAR PROFILE AL REGISTRARSE
+-- ============================================================================
+
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -233,239 +721,27 @@ BEGIN
     NEW.id,
     NEW.email,
     COALESCE(NEW.raw_user_meta_data->>'nombre', split_part(NEW.email, '@', 1)),
-    COALESCE(NEW.raw_user_meta_data->>'rol', 'especialista'),
+    COALESCE(NEW.raw_user_meta_data->>'rol', 'trabajador'),
     COALESCE(NEW.raw_user_meta_data->>'telefono', '')
   );
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Trigger for new auth user
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- ==================== HELPER FUNCTIONS (SECURITY DEFINER) ====================
--- These functions bypass RLS to prevent infinite recursion
+-- ============================================================================
+-- STORAGE BUCKETS
+-- ============================================================================
+-- Ejecutar en Supabase Dashboard > Storage
 
--- Get all project IDs for a user
-CREATE OR REPLACE FUNCTION get_user_project_ids(user_uuid UUID)
-RETURNS TABLE(proyecto_id UUID) AS $$
-BEGIN
-  RETURN QUERY
-  SELECT pu.proyecto_id
-  FROM proyecto_usuarios pu
-  WHERE pu.user_id = user_uuid;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+-- INSERT INTO storage.buckets (id, name, public) VALUES ('documentos', 'documentos', false);
+-- INSERT INTO storage.buckets (id, name, public) VALUES ('facturas', 'facturas', false);
+-- INSERT INTO storage.buckets (id, name, public) VALUES ('pendientes', 'pendientes', false);
+-- INSERT INTO storage.buckets (id, name, public) VALUES ('avatars', 'avatars', true);
 
--- Check if user is admin or jefe
-CREATE OR REPLACE FUNCTION is_admin_or_jefe(user_uuid UUID)
-RETURNS BOOLEAN AS $$
-BEGIN
-  RETURN EXISTS (
-    SELECT 1 FROM profiles
-    WHERE id = user_uuid
-    AND rol IN ('admin', 'jefe_proyecto')
-  );
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Check if user is member of specific project
-CREATE OR REPLACE FUNCTION is_project_member(user_uuid UUID, project_uuid UUID)
-RETURNS BOOLEAN AS $$
-BEGIN
-  RETURN EXISTS (
-    SELECT 1 FROM proyecto_usuarios
-    WHERE user_id = user_uuid AND proyecto_id = project_uuid
-  );
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- ==================== ROW LEVEL SECURITY ====================
-
--- Enable RLS on all tables
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE proyectos ENABLE ROW LEVEL SECURITY;
-ALTER TABLE proyecto_usuarios ENABLE ROW LEVEL SECURITY;
-ALTER TABLE visitas ENABLE ROW LEVEL SECURITY;
-ALTER TABLE asuntos ENABLE ROW LEVEL SECURITY;
-ALTER TABLE pendientes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE documentos ENABLE ROW LEVEL SECURITY;
-ALTER TABLE notas ENABLE ROW LEVEL SECURITY;
-ALTER TABLE notificaciones ENABLE ROW LEVEL SECURITY;
-ALTER TABLE presupuesto_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE permisos ENABLE ROW LEVEL SECURITY;
-
--- PROFILES
-CREATE POLICY "Users can view own profile" ON profiles
-  FOR SELECT USING (auth.uid() = id);
-
-CREATE POLICY "Users can update own profile" ON profiles
-  FOR UPDATE USING (auth.uid() = id);
-
--- PROYECTOS
-CREATE POLICY "Users can view their projects" ON proyectos
-  FOR SELECT USING (
-    id IN (SELECT get_user_project_ids(auth.uid()))
-  );
-
-CREATE POLICY "Admins and jefes can manage projects" ON proyectos
-  FOR ALL USING (is_admin_or_jefe(auth.uid()));
-
--- PROYECTO_USUARIOS (no recursion)
-CREATE POLICY "Users can view own memberships" ON proyecto_usuarios
-  FOR SELECT USING (user_id = auth.uid());
-
-CREATE POLICY "Admins can manage memberships" ON proyecto_usuarios
-  FOR ALL USING (is_admin_or_jefe(auth.uid()));
-
--- VISITAS
-CREATE POLICY "Users can view visitas from their projects" ON visitas
-  FOR SELECT USING (
-    proyecto_id IN (SELECT get_user_project_ids(auth.uid()))
-  );
-
-CREATE POLICY "Users can create visitas" ON visitas
-  FOR INSERT WITH CHECK (
-    proyecto_id IN (SELECT get_user_project_ids(auth.uid()))
-    AND creado_por = auth.uid()
-  );
-
-CREATE POLICY "Users can update visitas" ON visitas
-  FOR UPDATE USING (
-    proyecto_id IN (SELECT get_user_project_ids(auth.uid()))
-  );
-
-CREATE POLICY "Admins and jefes can delete visitas" ON visitas
-  FOR DELETE USING (
-    is_admin_or_jefe(auth.uid())
-    AND proyecto_id IN (SELECT get_user_project_ids(auth.uid()))
-  );
-
--- ASUNTOS
-CREATE POLICY "Users can view asuntos" ON asuntos
-  FOR SELECT USING (
-    visita_id IN (
-      SELECT v.id FROM visitas v
-      WHERE v.proyecto_id IN (SELECT get_user_project_ids(auth.uid()))
-    )
-  );
-
-CREATE POLICY "Users can manage asuntos" ON asuntos
-  FOR ALL USING (
-    visita_id IN (
-      SELECT v.id FROM visitas v
-      WHERE v.proyecto_id IN (SELECT get_user_project_ids(auth.uid()))
-    )
-  );
-
--- PENDIENTES
-CREATE POLICY "Users can view pendientes from their projects" ON pendientes
-  FOR SELECT USING (
-    proyecto_id IN (SELECT get_user_project_ids(auth.uid()))
-  );
-
-CREATE POLICY "Users can create pendientes" ON pendientes
-  FOR INSERT WITH CHECK (
-    proyecto_id IN (SELECT get_user_project_ids(auth.uid()))
-  );
-
-CREATE POLICY "Users can update their pendientes" ON pendientes
-  FOR UPDATE USING (
-    encargado_id = auth.uid()
-    OR creado_por = auth.uid()
-    OR is_admin_or_jefe(auth.uid())
-  );
-
-CREATE POLICY "Admins and jefes can delete pendientes" ON pendientes
-  FOR DELETE USING (is_admin_or_jefe(auth.uid()));
-
--- DOCUMENTOS
-CREATE POLICY "Users can view documents from their projects" ON documentos
-  FOR SELECT USING (
-    proyecto_id IN (SELECT get_user_project_ids(auth.uid()))
-  );
-
-CREATE POLICY "Users can upload documents" ON documentos
-  FOR INSERT WITH CHECK (
-    proyecto_id IN (SELECT get_user_project_ids(auth.uid()))
-    AND subio_por = auth.uid()
-  );
-
-CREATE POLICY "Admins and jefes can delete documents" ON documentos
-  FOR DELETE USING (is_admin_or_jefe(auth.uid()));
-
--- NOTAS
-CREATE POLICY "Users can view notas from their projects" ON notas
-  FOR SELECT USING (
-    proyecto_id IN (SELECT get_user_project_ids(auth.uid()))
-  );
-
-CREATE POLICY "Users can create notas" ON notas
-  FOR INSERT WITH CHECK (
-    proyecto_id IN (SELECT get_user_project_ids(auth.uid()))
-    AND autor_id = auth.uid()
-  );
-
-CREATE POLICY "Users can update own notas" ON notas
-  FOR UPDATE USING (autor_id = auth.uid());
-
-CREATE POLICY "Users can delete own notas" ON notas
-  FOR DELETE USING (autor_id = auth.uid());
-
--- NOTIFICACIONES
-CREATE POLICY "Users can view own notifications" ON notificaciones
-  FOR SELECT USING (usuario_id = auth.uid());
-
-CREATE POLICY "Users can update own notifications" ON notificaciones
-  FOR UPDATE USING (usuario_id = auth.uid());
-
-CREATE POLICY "Users can delete own notifications" ON notificaciones
-  FOR DELETE USING (usuario_id = auth.uid());
-
-CREATE POLICY "System can create notifications" ON notificaciones
-  FOR INSERT WITH CHECK (true);
-
--- PRESUPUESTO_ITEMS
-CREATE POLICY "Users can view presupuesto from their projects" ON presupuesto_items
-  FOR SELECT USING (
-    proyecto_id IN (SELECT get_user_project_ids(auth.uid()))
-  );
-
-CREATE POLICY "Admins and jefes can manage presupuesto" ON presupuesto_items
-  FOR ALL USING (
-    is_admin_or_jefe(auth.uid())
-    AND proyecto_id IN (SELECT get_user_project_ids(auth.uid()))
-  );
-
--- PERMISOS
-CREATE POLICY "Users can view permisos from their projects" ON permisos
-  FOR SELECT USING (
-    proyecto_id IN (SELECT get_user_project_ids(auth.uid()))
-  );
-
-CREATE POLICY "Admins and jefes can manage permisos" ON permisos
-  FOR ALL USING (
-    is_admin_or_jefe(auth.uid())
-    AND proyecto_id IN (SELECT get_user_project_ids(auth.uid()))
-  );
-
--- ==================== VERIFICATION ====================
-
-DO $$
-BEGIN
-  RAISE NOTICE '✅ TRAZA Database Schema created successfully';
-  RAISE NOTICE '';
-  RAISE NOTICE 'Tables created: 11';
-  RAISE NOTICE 'Indexes created: 15';
-  RAISE NOTICE 'Triggers created: 8';
-  RAISE NOTICE 'Helper functions: 3 (SECURITY DEFINER)';
-  RAISE NOTICE 'RLS policies: Enabled on all tables';
-  RAISE NOTICE '';
-  RAISE NOTICE 'Next steps:';
-  RAISE NOTICE '1. Create your first user via Supabase Auth';
-  RAISE NOTICE '2. Set their rol to admin in the profiles table';
-  RAISE NOTICE '3. Test the connection from your app';
-END $$;
+-- ============================================================================
+-- FIN DEL SCHEMA
+-- ============================================================================
