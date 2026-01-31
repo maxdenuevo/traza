@@ -67,10 +67,10 @@ export const DailyOperations = ({ fecha }: DailyOperationsProps) => {
   const markAllPresentMutation = useMarkAllPresent();
 
   const handleToggleCheckbox = async (itemId: string) => {
-    if (!user) return;
+    if (!user || !currentProject) return;
 
     try {
-      await toggleCheckboxMutation.mutateAsync({ itemId, fecha, userId: user.id });
+      await toggleCheckboxMutation.mutateAsync({ itemId, fecha, userId: user.id, proyectoId: currentProject.id });
     } catch (err) {
       toast.error('Error al actualizar');
     }

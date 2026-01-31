@@ -4,12 +4,13 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { Layout } from './components/layout/Layout';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
-import { OfflineIndicator } from './components/common/OfflineIndicator';
+import { SyncStatusIndicator } from './components/common/SyncStatusIndicator';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { queryClient } from './services/queryClient';
 import { useAuthStore } from './store/useAuthStore';
 import { useProjectStore } from './store/useProjectStore';
 import { LoadingSpinner } from './components/common/LoadingSpinner';
+import { initSyncManager } from './services/syncManager';
 
 // Lazy load pages for code splitting
 const Login = lazy(() => import('./pages/Login'));
@@ -99,11 +100,17 @@ function AppContent() {
 }
 
 function App() {
+  // Initialize sync manager on mount
+  useEffect(() => {
+    const cleanup = initSyncManager();
+    return cleanup;
+  }, []);
+
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
-          <OfflineIndicator />
+          <SyncStatusIndicator />
           <AppContent />
           <Toaster position="top-right" richColors />
         </BrowserRouter>
