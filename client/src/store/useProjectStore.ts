@@ -15,6 +15,7 @@ import type { ProyectoListItem } from '../types';
 interface ProjectState {
   currentProject: ProyectoListItem | null;
   projects: ProyectoListItem[];
+  projectSelectorOpen: boolean;
 
   // Actions
   setCurrentProject: (project: ProyectoListItem | null) => void;
@@ -22,6 +23,8 @@ interface ProjectState {
   addProject: (project: ProyectoListItem) => void;
   updateProject: (id: string, updates: Partial<ProyectoListItem>) => void;
   removeProject: (id: string) => void;
+  openProjectSelector: () => void;
+  closeProjectSelector: () => void;
 }
 
 export const useProjectStore = create<ProjectState>()(
@@ -29,6 +32,7 @@ export const useProjectStore = create<ProjectState>()(
     (set) => ({
       currentProject: null,
       projects: [],
+      projectSelectorOpen: false,
 
       setCurrentProject: (project) => set({ currentProject: project }),
 
@@ -53,9 +57,16 @@ export const useProjectStore = create<ProjectState>()(
         currentProject:
           state.currentProject?.id === id ? null : state.currentProject,
       })),
+
+      openProjectSelector: () => set({ projectSelectorOpen: true }),
+      closeProjectSelector: () => set({ projectSelectorOpen: false }),
     }),
     {
       name: 'esant-project',
+      partialize: (state) => ({
+        currentProject: state.currentProject,
+        projects: state.projects,
+      }),
     }
   )
 );

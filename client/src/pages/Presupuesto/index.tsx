@@ -11,6 +11,7 @@ import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
 import { Modal } from '../../components/common/Modal';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+import { NoProjectSelected } from '../../components/common/NoProjectSelected';
 import { useProjectStore } from '../../store/useProjectStore';
 import { useProgramaStore, SECTORS } from '../../store/useProgramaStore';
 import {
@@ -206,11 +207,7 @@ export const PresupuestoPage = () => {
   }
 
   if (!currentProject) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-esant-gray-600">Selecciona un proyecto</p>
-      </div>
-    );
+    return <NoProjectSelected icon="wallet" message="Selecciona o crea un proyecto para ver el presupuesto" />;
   }
 
   return (

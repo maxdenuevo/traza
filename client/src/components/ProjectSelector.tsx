@@ -210,8 +210,17 @@ export function ProjectSelector({ isOpen, onClose }: ProjectSelectorProps) {
                 <p className="text-sm text-gray-500 mt-1">
                   {searchTerm
                     ? 'Intenta con otro término de búsqueda'
-                    : 'No tienes proyectos asignados'}
+                    : 'Crea tu primer proyecto para comenzar'}
                 </p>
+                {!searchTerm && (
+                  <button
+                    onClick={handleOpenCreateModal}
+                    className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 bg-[#DC2626] text-white rounded-xl font-medium hover:bg-[#B91C1C] transition-colors text-sm"
+                  >
+                    <Icon name="plus" className="w-4 h-4" />
+                    Crear proyecto
+                  </button>
+                )}
               </div>
             )}
           </div>

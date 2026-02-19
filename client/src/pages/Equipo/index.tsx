@@ -7,6 +7,7 @@ import { Icon } from '../../components/common/Icon';
 import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+import { NoProjectSelected } from '../../components/common/NoProjectSelected';
 import { useProjectStore } from '../../store/useProjectStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import {
@@ -143,11 +144,7 @@ export const EquipoPage = () => {
 
   // No project selected
   if (!currentProject) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-esant-gray-600">Selecciona un proyecto para ver el equipo</p>
-      </div>
-    );
+    return <NoProjectSelected icon="users" message="Selecciona o crea un proyecto para ver el equipo" />;
   }
 
   // No team members

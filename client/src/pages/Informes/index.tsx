@@ -8,6 +8,7 @@ import { Card } from '../../components/common/Card';
 import { Modal } from '../../components/common/Modal';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { FAB } from '../../components/common/FAB';
+import { NoProjectSelected } from '../../components/common/NoProjectSelected';
 import { useProjectStore } from '../../store/useProjectStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { usePermissions } from '../../hooks/usePermissions';
@@ -168,12 +169,7 @@ export const InformesPage = () => {
   }
 
   if (!currentProject) {
-    return (
-      <div className="text-center py-12">
-        <Icon name="file-text" size={48} className="text-gray-400 mx-auto mb-3" />
-        <p className="text-gray-600">Selecciona un proyecto para ver informes</p>
-      </div>
-    );
+    return <NoProjectSelected icon="file-text" message="Selecciona o crea un proyecto para ver los informes" />;
   }
 
   return (

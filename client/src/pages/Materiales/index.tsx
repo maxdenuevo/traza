@@ -7,6 +7,7 @@ import { Modal } from '../../components/common/Modal';
 import { FAB } from '../../components/common/FAB';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { Tabs } from '../../components/common/Tabs';
+import { NoProjectSelected } from '../../components/common/NoProjectSelected';
 import { useProjectStore } from '../../store/useProjectStore';
 import {
   useMaterialesBySector,
@@ -261,12 +262,7 @@ export const MaterialesPage = () => {
 
   // No project
   if (!currentProject) {
-    return (
-      <div className="text-center py-12">
-        <Icon name="package" size={48} className="text-esant-gray-400 mx-auto mb-3" />
-        <p className="text-esant-gray-600">Selecciona un proyecto para ver los materiales</p>
-      </div>
-    );
+    return <NoProjectSelected icon="package" message="Selecciona o crea un proyecto para ver los materiales" />;
   }
 
   const groups = viewMode === 'sector' ? sectorGroups : proveedorGroups;

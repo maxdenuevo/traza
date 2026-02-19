@@ -63,7 +63,35 @@ export const authService = {
     if (authError) throw authError;
     if (!authData.user) throw new Error('No user returned from signup');
 
-    const user = await this.getCurrentUser();
+    // Wait a bit for the trigger to create the profile
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Try to get the user profile
+    let user = await this.getCurrentUser();
+
+    // If profile doesn't exist (trigger didn't fire), create it manually
+    if (!user) {
+      console.log('Profile not found, creating manually...');
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: authData.user.id,
+          email: data.email,
+          nombre: data.nombre,
+          telefono: data.telefono,
+          rol: data.rol || 'especialista',
+          especialidad: data.especialidad || null,
+        });
+
+      if (profileError) {
+        console.error('Error creating profile:', profileError);
+        throw new Error('Error al crear el perfil de usuario');
+      }
+
+      // Try again to get the user
+      user = await this.getCurrentUser();
+    }
+
     if (!user) throw new Error('Failed to get user profile after signup');
 
     return { user, session: authData.session };

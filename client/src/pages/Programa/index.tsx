@@ -7,6 +7,7 @@ import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { Modal } from '../../components/common/Modal';
 import { StatusBadge, type ProgramaStatus } from '../../components/common/StatusBadge';
+import { NoProjectSelected } from '../../components/common/NoProjectSelected';
 import { useProjectStore } from '../../store/useProjectStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useProgramaStore, SECTORS, type SectorStatus, type SectorData } from '../../store/useProgramaStore';
@@ -120,12 +121,7 @@ export const ProgramaPage = () => {
 
   // No project selected
   if (!currentProject) {
-    return (
-      <div className="text-center py-12">
-        <Icon name="list-checks" size={48} className="text-esant-gray-400 mx-auto mb-3" />
-        <p className="text-esant-gray-600">Selecciona un proyecto para ver el programa</p>
-      </div>
-    );
+    return <NoProjectSelected icon="list-checks" message="Selecciona o crea un proyecto para ver el programa" />;
   }
 
   const statusCounts = getStatusCounts();

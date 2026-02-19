@@ -4,6 +4,7 @@ import { Header } from './Header';
 import { Drawer } from './Drawer';
 import { ProjectSelector } from '../ProjectSelector';
 import { useUnreadCount } from '../../hooks/useNotificaciones';
+import { useProjectStore } from '../../store/useProjectStore';
 
 interface LayoutProps {
   children: ReactNode;
@@ -17,14 +18,10 @@ export const Layout = ({
   const navigate = useNavigate();
   const { data: unreadCount = 0 } = useUnreadCount();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [projectSelectorOpen, setProjectSelectorOpen] = useState(false);
+  const { projectSelectorOpen, openProjectSelector, closeProjectSelector } = useProjectStore();
 
   const handleOpenDrawer = () => setDrawerOpen(true);
   const handleCloseDrawer = () => setDrawerOpen(false);
-
-  const handleOpenProjectSelector = () => {
-    setProjectSelectorOpen(true);
-  };
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -43,13 +40,13 @@ export const Layout = ({
       <Drawer
         isOpen={drawerOpen}
         onClose={handleCloseDrawer}
-        onOpenProjectSelector={handleOpenProjectSelector}
+        onOpenProjectSelector={openProjectSelector}
       />
 
       {/* Project Selector Modal */}
       <ProjectSelector
         isOpen={projectSelectorOpen}
-        onClose={() => setProjectSelectorOpen(false)}
+        onClose={closeProjectSelector}
       />
     </div>
   );

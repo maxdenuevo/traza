@@ -8,6 +8,7 @@ import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { Tabs } from '../../components/common/Tabs';
 import { Modal } from '../../components/common/Modal';
 import { FAB } from '../../components/common/FAB';
+import { NoProjectSelected } from '../../components/common/NoProjectSelected';
 import { AttachmentUploader } from '../../components/features/attachments/AttachmentUploader';
 import { useProjectStore } from '../../store/useProjectStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -198,11 +199,7 @@ export const PendientesPage = () => {
 
   // No project selected
   if (!currentProject) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-esant-gray-600">Selecciona un proyecto para ver los pendientes</p>
-      </div>
-    );
+    return <NoProjectSelected icon="list-todo" message="Selecciona o crea un proyecto para ver los pendientes" />;
   }
 
   // No pendientes

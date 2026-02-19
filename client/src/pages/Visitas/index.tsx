@@ -13,6 +13,7 @@ import { Card } from '../../components/common/Card';
 import { Icon } from '../../components/common/Icon';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { FAB } from '../../components/common/FAB';
+import { NoProjectSelected } from '../../components/common/NoProjectSelected';
 import { useProjectStore } from '../../store/useProjectStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { SECTORS } from '../../store/useProgramaStore';
@@ -215,12 +216,7 @@ export const VisitasPage = () => {
 
   // No project selected
   if (!currentProject) {
-    return (
-      <div className="text-center py-12">
-        <Icon name="calendar" size={48} className="text-gray-400 mx-auto mb-3" />
-        <p className="text-gray-600">Selecciona un proyecto para ver las visitas</p>
-      </div>
-    );
+    return <NoProjectSelected icon="calendar" message="Selecciona o crea un proyecto para ver las visitas" />;
   }
 
   return (

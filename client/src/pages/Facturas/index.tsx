@@ -8,6 +8,7 @@ import { Card } from '../../components/common/Card';
 import { Modal } from '../../components/common/Modal';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { FAB } from '../../components/common/FAB';
+import { NoProjectSelected } from '../../components/common/NoProjectSelected';
 import { useProjectStore } from '../../store/useProjectStore';
 import { SECTORS } from '../../store/useProgramaStore';
 import {
@@ -172,11 +173,7 @@ export const FacturasPage = () => {
   }
 
   if (!currentProject) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-esant-gray-600">Selecciona un proyecto</p>
-      </div>
-    );
+    return <NoProjectSelected icon="receipt" message="Selecciona o crea un proyecto para ver las facturas" />;
   }
 
   return (
