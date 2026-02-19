@@ -108,15 +108,14 @@ export const presupuestoService = {
    * Update a budget item
    */
   async update(id: string, updates: Partial<PresupuestoItem>) {
-    const updateData: any = {
-      descripcion: updates.descripcion,
-      categoria: updates.categoria,
-      monto_estimado: updates.montoEstimado,
-      monto_real: updates.montoReal,
-      porcentaje_ejecutado: updates.porcentajeEjecutado,
-      archivo_url: updates.archivoUrl,
-      notifica_cambios: updates.notificaCambios,
-    };
+    const updateData: Record<string, unknown> = {};
+    if (updates.descripcion !== undefined) updateData.descripcion = updates.descripcion;
+    if (updates.categoria !== undefined) updateData.categoria = updates.categoria;
+    if (updates.montoEstimado !== undefined) updateData.monto_estimado = updates.montoEstimado;
+    if (updates.montoReal !== undefined) updateData.monto_real = updates.montoReal;
+    if (updates.porcentajeEjecutado !== undefined) updateData.porcentaje_ejecutado = updates.porcentajeEjecutado;
+    if (updates.archivoUrl !== undefined) updateData.archivo_url = updates.archivoUrl;
+    if (updates.notificaCambios !== undefined) updateData.notifica_cambios = updates.notificaCambios;
 
     // Update ultima_actualizacion if monto_real or porcentaje changes
     if (updates.montoReal !== undefined || updates.porcentajeEjecutado !== undefined) {

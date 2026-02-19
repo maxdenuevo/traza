@@ -31,7 +31,7 @@ export const PENDIENTE_ESTADO_COLORS: Record<string, StatusColor> = {
 };
 
 export const PENDIENTE_ESTADO_LABELS: Record<string, string> = {
-  creada: 'Creada',
+  creada: 'Por hacer',
   en_progreso: 'En progreso',
   pausada: 'Pausada',
   completada: 'Completada',

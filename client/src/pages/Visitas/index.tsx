@@ -406,6 +406,7 @@ export const VisitasPage = () => {
         <VisitaForm
           onSubmit={handleCreateVisita}
           onCancel={() => setShowNewVisitModal(false)}
+          initialDate={selectedDate}
         />
       </Modal>
     </div>

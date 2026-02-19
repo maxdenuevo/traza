@@ -10,6 +10,8 @@ import { Icon } from '../../components/common/Icon';
 import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
 import { Modal } from '../../components/common/Modal';
+import { FAB } from '../../components/common/FAB';
+import { CurrencyInput } from '../../components/common/CurrencyInput';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { NoProjectSelected } from '../../components/common/NoProjectSelected';
 import { useProjectStore } from '../../store/useProjectStore';
@@ -30,6 +32,7 @@ export const PresupuestoPage = () => {
   const { currentProject } = useProjectStore();
   const { getSectorData } = useProgramaStore();
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['proyecto']));
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingItem, setEditingItem] = useState<PresupuestoItem | null>(null);
   const [formData, setFormData] = useState({
@@ -116,6 +119,18 @@ export const PresupuestoPage = () => {
         next.delete(section);
       } else {
         next.add(section);
+      }
+      return next;
+    });
+  };
+
+  const toggleCategory = (categoria: string) => {
+    setExpandedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(categoria)) {
+        next.delete(categoria);
+      } else {
+        next.add(categoria);
       }
       return next;
     });
@@ -211,7 +226,7 @@ export const PresupuestoPage = () => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-20">
       {/* Header */}
       <Card className="p-6">
         <h2 className="font-semibold text-xl text-esant-black mb-1">Presupuesto / Gastos</h2>
@@ -246,20 +261,50 @@ export const PresupuestoPage = () => {
 
         {expandedSections.has('proyecto') && (
           <div className="border-t border-esant-gray-200 p-4 space-y-3">
-            {/* Main categories breakdown */}
+            {/* Main categories breakdown (expandable) */}
             {mainBudget.map(({ categoria, items, totalEstimado, totalReal }) => (
-              <div key={categoria} className="flex items-center justify-between py-2 border-b border-esant-gray-100 last:border-0">
-                <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${PRESUPUESTO_CATEGORIA_COLORS[categoria]?.indicator || 'bg-esant-gray-400'}`}></div>
-                  <span className="text-sm text-esant-gray-800">{PRESUPUESTO_CATEGORIA_LABELS[categoria]}</span>
-                  <span className="text-xs text-esant-gray-500">({items.length})</span>
-                </div>
-                <div className="flex items-center gap-4 text-sm">
-                  <span className="text-esant-gray-600">{formatCurrency(totalEstimado)} est</span>
-                  <span className={totalReal > totalEstimado ? 'text-esant-red font-medium' : 'text-esant-black font-medium'}>
-                    {formatCurrency(totalReal)} real
-                  </span>
-                </div>
+              <div key={categoria}>
+                <button
+                  onClick={() => toggleCategory(categoria)}
+                  className="w-full flex items-center justify-between py-2 border-b border-esant-gray-100 last:border-0 hover:bg-esant-gray-50 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <Icon
+                      name={expandedCategories.has(categoria) ? 'chevron-down' : 'chevron-right'}
+                      size={14}
+                      className="text-esant-gray-400"
+                    />
+                    <div className={`w-2 h-2 rounded-full ${PRESUPUESTO_CATEGORIA_COLORS[categoria]?.indicator || 'bg-esant-gray-400'}`}></div>
+                    <span className="text-sm text-esant-gray-800">{PRESUPUESTO_CATEGORIA_LABELS[categoria]}</span>
+                    <span className="text-xs text-esant-gray-500">({items.length})</span>
+                  </div>
+                  <div className="flex items-center gap-4 text-sm">
+                    <span className="text-esant-gray-600">{formatCurrency(totalEstimado)} est</span>
+                    <span className={totalReal > totalEstimado ? 'text-esant-red font-medium' : 'text-esant-black font-medium'}>
+                      {formatCurrency(totalReal)} real
+                    </span>
+                  </div>
+                </button>
+                {expandedCategories.has(categoria) && items.map((item) => {
+                  const overBudget = (item.montoReal || 0) > item.montoEstimado;
+                  return (
+                    <div key={item.id} className="flex items-center justify-between py-2 pl-8 pr-0 border-b border-esant-gray-50 last:border-0">
+                      <span className="text-xs text-esant-gray-600 truncate flex-1 min-w-0">{item.descripcion}</span>
+                      <div className="flex items-center gap-3 text-xs ml-3">
+                        <span className="text-esant-gray-500">{formatCurrency(item.montoEstimado)}</span>
+                        <span className={overBudget ? 'text-esant-red font-medium' : 'text-esant-gray-800'}>
+                          {formatCurrency(item.montoReal || 0)}
+                        </span>
+                        <button
+                          onClick={() => handleEdit(item)}
+                          className="p-1 hover:bg-esant-gray-100 rounded transition-colors"
+                        >
+                          <Icon name="edit" size={12} className="text-esant-gray-400" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             ))}
 
@@ -427,12 +472,6 @@ export const PresupuestoPage = () => {
         </div>
       </Card>
 
-      {/* Add Button */}
-      <Button variant="primary" fullWidth onClick={handleAdd}>
-        <Icon name="plus" size={18} />
-        Agregar Item
-      </Button>
-
       {/* All Items (detailed view) */}
       {categoryGroups.length > 0 && (
         <div className="bg-esant-white rounded-xl shadow-esant overflow-hidden">
@@ -514,6 +553,9 @@ export const PresupuestoPage = () => {
         </div>
       )}
 
+      {/* FAB */}
+      <FAB onClick={handleAdd} />
+
       {/* Add/Edit Modal */}
       <Modal
         isOpen={showAddModal}
@@ -550,22 +592,18 @@ export const PresupuestoPage = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-esant-gray-600 mb-2">Monto Estimado</label>
-              <input
-                type="number"
+              <CurrencyInput
+                name="montoEstimado"
                 value={formData.montoEstimado}
                 onChange={(e) => setFormData({ ...formData, montoEstimado: e.target.value })}
-                placeholder="0"
-                className="w-full px-0 py-3 bg-transparent border-0 border-b-2 border-esant-gray-200 text-esant-black placeholder-esant-gray-400 focus:outline-none focus:border-esant-black transition-colors text-base"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-esant-gray-600 mb-2">Monto Real</label>
-              <input
-                type="number"
+              <CurrencyInput
+                name="montoReal"
                 value={formData.montoReal}
                 onChange={(e) => setFormData({ ...formData, montoReal: e.target.value })}
-                placeholder="0"
-                className="w-full px-0 py-3 bg-transparent border-0 border-b-2 border-esant-gray-200 text-esant-black placeholder-esant-gray-400 focus:outline-none focus:border-esant-black transition-colors text-base"
               />
             </div>
           </div>

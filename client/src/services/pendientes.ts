@@ -192,7 +192,7 @@ export const pendientesService = {
    * Update a pendiente
    */
   async update(id: string, updates: Partial<Pendiente>) {
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
 
     // Only include fields that are defined
     if (updates.area !== undefined) updateData.area = updates.area;
@@ -203,7 +203,6 @@ export const pendientesService = {
     if (updates.prioridad !== undefined) updateData.prioridad = updates.prioridad;
     if (updates.fechaVencimiento !== undefined) updateData.fecha_vencimiento = updates.fechaVencimiento;
     if (updates.notasAdicionales !== undefined) updateData.notas_adicionales = updates.notasAdicionales;
-    if (updates.attachments !== undefined) updateData.attachments = updates.attachments;
 
     // If marking as completed, set fecha_completado
     if (updates.estado === 'completada') {

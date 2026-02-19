@@ -6,6 +6,7 @@ import { USER_ROLE_LABELS, USER_ROLE_COLORS, generateWhatsAppLink } from '../../
 import { Icon } from '../../components/common/Icon';
 import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
+import { FAB } from '../../components/common/FAB';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { NoProjectSelected } from '../../components/common/NoProjectSelected';
 import { useProjectStore } from '../../store/useProjectStore';
@@ -159,7 +160,7 @@ export const EquipoPage = () => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-20">
       {/* Header con estadísticas */}
       <Card className="p-6">
         <h2 className="font-semibold text-xl text-esant-black mb-1">Equipo del Proyecto</h2>
@@ -356,18 +357,9 @@ export const EquipoPage = () => {
         );
       })}
 
-      {/* Add Member Button - Only for admins and jefes */}
+      {/* FAB - Add member (admin/jefe only) */}
       {canManageTeam && (
-        <Card className="p-4 text-center">
-          <Button
-            variant="secondary"
-            fullWidth
-            onClick={() => toast.info('Función de agregar miembros próximamente')}
-          >
-            <Icon name="user-plus" size={18} />
-            Agregar Miembro al Equipo
-          </Button>
-        </Card>
+        <FAB onClick={() => toast.info('Función de agregar miembros próximamente')} icon="user-plus" />
       )}
     </div>
   );

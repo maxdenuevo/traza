@@ -30,6 +30,7 @@ export const Layout = ({
         notificationCount={unreadCount}
         onMenuClick={handleOpenDrawer}
         onNotificationClick={() => navigate('/notificaciones')}
+        onTitleClick={() => navigate('/visitas')}
       />
 
       <main className="container mx-auto px-4 py-4 max-w-7xl pb-8">

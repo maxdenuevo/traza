@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Icon } from '../common/Icon';
 import { FormField } from '../common/FormField';
+import { CurrencyInput } from '../common/CurrencyInput';
 import { LoadingButton } from '../common/LoadingButton';
 import { useCreateProyecto, useUpdateProyecto } from '../../hooks/useProyectos';
 import { useProjectStore } from '../../store/useProjectStore';
@@ -156,32 +157,31 @@ export function ProjectFormModal({ mode, project, isOpen, onClose }: ProjectForm
       />
 
       {/* Modal */}
-      <div className="fixed inset-x-4 top-10 max-w-3xl mx-auto z-[60] animate-slideDown max-h-[90vh] overflow-y-auto">
-        <div className="bg-white rounded-2xl shadow-2xl">
-          {/* Header */}
-          <div className="p-6 border-b border-gray-200 sticky top-0 bg-white rounded-t-2xl">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">
-                  {isEdit ? 'Editar Proyecto' : 'Nuevo Proyecto'}
-                </h2>
-                <p className="text-sm text-gray-500 mt-1">
-                  {isEdit
-                    ? 'Actualiza la información del proyecto'
-                    : 'Completa la información básica del proyecto'}
-                </p>
-              </div>
-              <button
-                onClick={onClose}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <Icon name="x" className="w-5 h-5 text-gray-500" />
-              </button>
+      <div className="fixed inset-x-4 top-4 sm:top-10 max-w-3xl mx-auto z-[60] animate-slideDown max-h-[calc(100vh-32px)] sm:max-h-[90vh] flex flex-col bg-white rounded-2xl shadow-2xl">
+        {/* Header - always visible */}
+        <div className="p-4 sm:p-6 border-b border-gray-200 flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">
+                {isEdit ? 'Editar Proyecto' : 'Nuevo Proyecto'}
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">
+                {isEdit
+                  ? 'Actualiza la información del proyecto'
+                  : 'Completa la información básica del proyecto'}
+              </p>
             </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <Icon name="x" className="w-5 h-5 text-gray-500" />
+            </button>
           </div>
+        </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        {/* Scrollable form content */}
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-5 flex-1 overflow-y-auto">
             {error && (
               <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
                 <Icon name="alert-circle" className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
@@ -256,17 +256,16 @@ export function ProjectFormModal({ mode, project, isOpen, onClose }: ProjectForm
               />
 
               {/* Presupuesto Total */}
-              <FormField
-                label="Presupuesto Total"
-                name="presupuestoTotal"
-                type="number"
-                value={formData.presupuestoTotal}
-                onChange={handleChange}
-                min="0"
-                step="1000"
-                placeholder="0"
-                prefix="$"
-              />
+              <div>
+                <label htmlFor="presupuestoTotal" className="block text-sm font-medium text-esant-gray-600 mb-2">
+                  Presupuesto Total
+                </label>
+                <CurrencyInput
+                  name="presupuestoTotal"
+                  value={formData.presupuestoTotal}
+                  onChange={(e) => setFormData(prev => ({ ...prev, presupuestoTotal: e.target.value }))}
+                />
+              </div>
 
               {/* Descripción */}
               <FormField
@@ -299,8 +298,7 @@ export function ProjectFormModal({ mode, project, isOpen, onClose }: ProjectForm
                 {isEdit ? 'Guardar Cambios' : 'Crear Proyecto'}
               </LoadingButton>
             </div>
-          </form>
-        </div>
+        </form>
       </div>
     </>
   );

@@ -11,6 +11,7 @@ import { Icon } from '../../components/common/Icon';
 import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
 import { Modal } from '../../components/common/Modal';
+import { FAB } from '../../components/common/FAB';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { NoProjectSelected } from '../../components/common/NoProjectSelected';
 import { useProjectStore } from '../../store/useProjectStore';
@@ -309,7 +310,7 @@ export const DocumentosPage = () => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-20">
       {/* Header */}
       <Card className="p-6">
         <h2 className="font-semibold text-xl text-esant-black mb-1">Documentos y Gestión</h2>
@@ -337,12 +338,6 @@ export const DocumentosPage = () => {
         </div>
       </Card>
 
-      {/* Add Button */}
-      <Button variant="primary" fullWidth onClick={() => setShowAddModal(true)}>
-        <Icon name="plus" size={18} />
-        Agregar
-      </Button>
-
       {/* Feed */}
       {feedItems.length === 0 ? (
         <Card className="p-8 text-center">
@@ -355,6 +350,9 @@ export const DocumentosPage = () => {
           {feedItems.map(renderFeedItem)}
         </div>
       )}
+
+      {/* FAB */}
+      <FAB onClick={() => setShowAddModal(true)} />
 
       {/* Add Modal */}
       <Modal

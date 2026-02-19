@@ -208,14 +208,15 @@ export const visitasService = {
    * Update a visita
    */
   async update(id: string, updates: Partial<Visita>) {
+    const updateData: Record<string, unknown> = {};
+    if (updates.fecha !== undefined) updateData.fecha = updates.fecha;
+    if (updates.hora !== undefined) updateData.hora = updates.hora;
+    if (updates.estado !== undefined) updateData.estado = updates.estado;
+    if (updates.notasGenerales !== undefined) updateData.notas_generales = updates.notasGenerales;
+
     const { data, error } = await supabase
       .from('visitas')
-      .update({
-        fecha: updates.fecha,
-        hora: updates.hora,
-        estado: updates.estado,
-        notas_generales: updates.notasGenerales,
-      })
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();

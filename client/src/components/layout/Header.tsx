@@ -5,13 +5,15 @@ interface HeaderProps {
   notificationCount?: number;
   onMenuClick: () => void;
   onNotificationClick?: () => void;
+  onTitleClick?: () => void;
 }
 
 export const Header = ({
   projectName,
   notificationCount = 0,
   onMenuClick,
-  onNotificationClick
+  onNotificationClick,
+  onTitleClick
 }: HeaderProps) => {
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
@@ -25,10 +27,14 @@ export const Header = ({
           <Icon name="menu" size={24} className="text-gray-900" />
         </button>
 
-        {/* Project Name - Centered with truncate */}
-        <h1 className="text-lg font-bold text-gray-900 uppercase tracking-wide absolute left-1/2 transform -translate-x-1/2 max-w-[180px] truncate">
+        {/* Project Name - Centered, tappable to go home */}
+        <button
+          onClick={onTitleClick}
+          className="text-lg font-bold text-gray-900 uppercase tracking-wide absolute left-1/2 transform -translate-x-1/2 max-w-[180px] truncate cursor-pointer"
+          aria-label="Ir al inicio"
+        >
           {projectName}
-        </h1>
+        </button>
 
         {/* Notification Bell - 44px touch target */}
         <button

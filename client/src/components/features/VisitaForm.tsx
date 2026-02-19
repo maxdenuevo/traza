@@ -5,10 +5,11 @@ import type { Visita } from '../../types';
 interface VisitaFormProps {
   onSubmit: (visita: Partial<Visita>) => void;
   onCancel: () => void;
+  initialDate?: Date;
 }
 
-export const VisitaForm = ({ onSubmit, onCancel }: VisitaFormProps) => {
-  const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
+export const VisitaForm = ({ onSubmit, onCancel, initialDate }: VisitaFormProps) => {
+  const [fecha, setFecha] = useState((initialDate ?? new Date()).toISOString().split('T')[0]);
   const [hora, setHora] = useState('09:00');
   const [notasGenerales, setNotasGenerales] = useState('');
 

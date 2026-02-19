@@ -6,6 +6,7 @@ import { Icon } from '../../components/common/Icon';
 import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
 import { Modal } from '../../components/common/Modal';
+import { CurrencyInput } from '../../components/common/CurrencyInput';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { FAB } from '../../components/common/FAB';
 import { NoProjectSelected } from '../../components/common/NoProjectSelected';
@@ -445,12 +446,10 @@ export const FacturasPage = () => {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-esant-gray-600 mb-1">Valor Neto *</label>
-              <input
-                type="number"
+              <CurrencyInput
+                name="valor"
                 value={formData.valor}
                 onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
-                placeholder="0"
-                className="w-full px-3 py-2 border-2 border-esant-gray-200 rounded-lg focus:outline-none focus:border-esant-black transition-colors"
               />
               {formData.valor && (
                 <p className="text-xs text-esant-gray-500 mt-1">

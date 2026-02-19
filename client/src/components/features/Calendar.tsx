@@ -45,7 +45,7 @@ export const Calendar = ({ visitas = [], onDayClick, proximaVisita }: CalendarPr
       return `${baseClass} bg-yellow-400 text-gray-900 font-semibold shadow-sm`;
     }
     if (hasCompletedVisit) {
-      return `${baseClass} bg-esant-green text-esant-white font-medium shadow-sm`;
+      return `${baseClass} bg-esant-gray-200 text-esant-gray-600 font-medium`;
     }
     if (visitasOnDay.length > 0) {
       return `${baseClass} bg-esant-gray-200 text-esant-black font-medium border-2 border-esant-black`;
@@ -110,7 +110,7 @@ export const Calendar = ({ visitas = [], onDayClick, proximaVisita }: CalendarPr
       {/* Legend - Responsive wrap for small screens */}
       <div className="flex flex-wrap gap-x-4 gap-y-2 mt-6 text-sm border-t border-esant-gray-200 pt-4">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-esant-green rounded-sm"></div>
+          <div className="w-3 h-3 bg-esant-gray-200 rounded-sm"></div>
           <span className="text-esant-gray-600">Realizada</span>
         </div>
         <div className="flex items-center gap-2">

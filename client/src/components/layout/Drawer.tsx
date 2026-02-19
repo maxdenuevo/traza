@@ -40,6 +40,7 @@ const DRAWER_NAV_GROUPS: NavGroup[] = [
       { id: 'visitas', label: 'Calendario', icon: 'calendar', permissions: ['libro_obra'] },
       { id: 'programa', label: 'Programa', icon: 'list-checks', permissions: ['programa_ver'] },
       { id: 'pendientes', label: 'Pendientes', icon: 'clipboard-list', permissions: ['pendientes_ver'] },
+      { id: 'facturas', label: 'Facturas', icon: 'receipt', permissions: ['facturas'] },
     ],
   },
   {
@@ -48,13 +49,6 @@ const DRAWER_NAV_GROUPS: NavGroup[] = [
     icon: 'wallet',
     collapsible: false,
     permissions: ['presupuesto'],
-  },
-  {
-    id: 'facturas',
-    label: 'Facturas',
-    icon: 'receipt',
-    collapsible: false,
-    permissions: ['facturas'],
   },
   {
     id: 'documentos',

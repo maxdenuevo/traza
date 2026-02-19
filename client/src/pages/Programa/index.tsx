@@ -6,6 +6,8 @@ import { Icon } from '../../components/common/Icon';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { Modal } from '../../components/common/Modal';
+import { FAB } from '../../components/common/FAB';
+import { CurrencyInput } from '../../components/common/CurrencyInput';
 import { StatusBadge, type ProgramaStatus } from '../../components/common/StatusBadge';
 import { NoProjectSelected } from '../../components/common/NoProjectSelected';
 import { useProjectStore } from '../../store/useProjectStore';
@@ -340,6 +342,11 @@ export const ProgramaPage = () => {
         </div>
       </Card>
 
+      {/* FAB for adding/editing sector data (admin only) */}
+      {canEdit && (
+        <FAB onClick={() => handleEditSector(SECTORS[0])} />
+      )}
+
       {/* Edit Modal */}
       <Modal
         isOpen={!!editingSector}
@@ -389,24 +396,20 @@ export const ProgramaPage = () => {
               <label className="block text-sm font-medium text-esant-gray-600 mb-2">
                 Valor estimado
               </label>
-              <input
-                type="number"
-                value={editForm.valorEstimado || ''}
+              <CurrencyInput
+                name="valorEstimado"
+                value={editForm.valorEstimado?.toString() || ''}
                 onChange={(e) => setEditForm({ ...editForm, valorEstimado: e.target.value ? Number(e.target.value) : undefined })}
-                placeholder="0"
-                className="w-full px-4 py-3 border-2 border-esant-gray-200 rounded-lg text-esant-black placeholder-esant-gray-400 focus:outline-none focus:border-esant-black transition-colors"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-esant-gray-600 mb-2">
                 Valor actual
               </label>
-              <input
-                type="number"
-                value={editForm.valorActual || ''}
+              <CurrencyInput
+                name="valorActual"
+                value={editForm.valorActual?.toString() || ''}
                 onChange={(e) => setEditForm({ ...editForm, valorActual: e.target.value ? Number(e.target.value) : undefined })}
-                placeholder="0"
-                className="w-full px-4 py-3 border-2 border-esant-gray-200 rounded-lg text-esant-black placeholder-esant-gray-400 focus:outline-none focus:border-esant-black transition-colors"
               />
             </div>
           </div>
