@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Icon } from './common/Icon';
 import { useProjectStore } from '../store/useProjectStore';
 import { useProyectos } from '../hooks/useProyectos';
@@ -18,6 +18,14 @@ export function ProjectSelector({ isOpen, onClose }: ProjectSelectorProps) {
   const [formModalMode, setFormModalMode] = useState<'create' | 'edit' | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<ProyectoListItem | null>(null);
+  const wasCreatingRef = useRef(false);
+
+  // Track when we enter create mode
+  useEffect(() => {
+    if (formModalMode === 'create') {
+      wasCreatingRef.current = true;
+    }
+  }, [formModalMode]);
 
   const handleSelectProject = (project: ProyectoListItem) => {
     setCurrentProject(project);
@@ -42,8 +50,16 @@ export function ProjectSelector({ isOpen, onClose }: ProjectSelectorProps) {
   };
 
   const handleCloseFormModal = () => {
+    const wasCreating = wasCreatingRef.current;
     setFormModalMode(null);
     setSelectedProject(null);
+    wasCreatingRef.current = false;
+
+    // Auto-close selector after successful project creation
+    // (the form already auto-selects the new project via setCurrentProject)
+    if (wasCreating) {
+      onClose();
+    }
   };
 
   const filteredProjects = projects?.filter((project) =>
@@ -71,7 +87,7 @@ export function ProjectSelector({ isOpen, onClose }: ProjectSelectorProps) {
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleOpenCreateModal}
-                  className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm font-medium"
+                  className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2 text-sm font-medium"
                 >
                   <Icon name="plus" className="w-4 h-4" />
                   <span className="hidden sm:inline">Nuevo</span>
@@ -95,7 +111,7 @@ export function ProjectSelector({ isOpen, onClose }: ProjectSelectorProps) {
                 placeholder="Buscar proyecto..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
               />
             </div>
           </div>
@@ -104,7 +120,7 @@ export function ProjectSelector({ isOpen, onClose }: ProjectSelectorProps) {
           <div className="flex-1 overflow-y-auto p-4 space-y-2">
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-blue-500" />
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-red-500" />
               </div>
             ) : filteredProjects && filteredProjects.length > 0 ? (
               filteredProjects.map((project) => (
@@ -113,7 +129,7 @@ export function ProjectSelector({ isOpen, onClose }: ProjectSelectorProps) {
                     onClick={() => handleSelectProject(project)}
                     className={`w-full text-left p-4 rounded-xl border-2 transition-all hover:shadow-md ${
                       currentProject?.id === project.id
-                        ? 'border-blue-500 bg-blue-50'
+                        ? 'border-red-500 bg-red-50'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
@@ -124,7 +140,7 @@ export function ProjectSelector({ isOpen, onClose }: ProjectSelectorProps) {
                             {project.nombre}
                           </h3>
                           {currentProject?.id === project.id && (
-                            <Icon name="check-circle" className="w-5 h-5 text-blue-500 flex-shrink-0" />
+                            <Icon name="check-circle" className="w-5 h-5 text-red-500 flex-shrink-0" />
                           )}
                         </div>
                         <p className="text-sm text-gray-600 mb-2">
@@ -136,7 +152,7 @@ export function ProjectSelector({ isOpen, onClose }: ProjectSelectorProps) {
                               project.estado === 'en_obra'
                                 ? 'bg-yellow-100 text-yellow-800'
                                 : project.estado === 'planificacion'
-                                ? 'bg-blue-100 text-blue-800'
+                                ? 'bg-gray-200 text-gray-800'
                                 : project.estado === 'terminado'
                                 ? 'bg-green-100 text-green-800'
                                 : 'bg-gray-100 text-gray-800'
@@ -163,14 +179,14 @@ export function ProjectSelector({ isOpen, onClose }: ProjectSelectorProps) {
                       <div
                         className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center ${
                           currentProject?.id === project.id
-                            ? 'bg-blue-100'
+                            ? 'bg-red-100'
                             : 'bg-gray-100'
                         }`}
                       >
                         <Icon
                           name="building"
                           className={`w-6 h-6 ${
-                            currentProject?.id === project.id ? 'text-blue-600' : 'text-gray-600'
+                            currentProject?.id === project.id ? 'text-red-600' : 'text-gray-600'
                           }`}
                         />
                       </div>
@@ -188,7 +204,7 @@ export function ProjectSelector({ isOpen, onClose }: ProjectSelectorProps) {
                   <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
                     <button
                       onClick={(e) => handleOpenEditModal(project, e)}
-                      className="p-2 bg-white rounded-lg shadow-md hover:bg-blue-50 hover:text-blue-600 transition-colors border border-gray-200"
+                      className="p-2 bg-white rounded-lg shadow-md hover:bg-red-50 hover:text-red-600 transition-colors border border-gray-200"
                       title="Editar proyecto"
                     >
                       <Icon name="edit-2" className="w-4 h-4" />

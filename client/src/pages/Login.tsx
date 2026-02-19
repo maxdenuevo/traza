@@ -113,14 +113,7 @@ export default function Login() {
           </form>
 
           {/* Footer Links */}
-          <div className="mt-6 text-center space-y-3">
-            <Link
-              to="/forgot-password"
-              className="text-sm text-gray-600 hover:text-gray-900 transition-colors inline-block"
-            >
-              ¿Olvidaste tu contraseña?
-            </Link>
-
+          <div className="mt-6 text-center">
             <div className="text-sm text-gray-600">
               ¿No tienes cuenta?{' '}
               <Link to="/signup" className="text-gray-900 font-medium hover:underline">

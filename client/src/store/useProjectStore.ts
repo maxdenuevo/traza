@@ -16,6 +16,7 @@ interface ProjectState {
   currentProject: ProyectoListItem | null;
   projects: ProyectoListItem[];
   projectSelectorOpen: boolean;
+  projectFormOpen: boolean;
 
   // Actions
   setCurrentProject: (project: ProyectoListItem | null) => void;
@@ -25,6 +26,8 @@ interface ProjectState {
   removeProject: (id: string) => void;
   openProjectSelector: () => void;
   closeProjectSelector: () => void;
+  openProjectForm: () => void;
+  closeProjectForm: () => void;
 }
 
 export const useProjectStore = create<ProjectState>()(
@@ -33,6 +36,7 @@ export const useProjectStore = create<ProjectState>()(
       currentProject: null,
       projects: [],
       projectSelectorOpen: false,
+      projectFormOpen: false,
 
       setCurrentProject: (project) => set({ currentProject: project }),
 
@@ -60,6 +64,8 @@ export const useProjectStore = create<ProjectState>()(
 
       openProjectSelector: () => set({ projectSelectorOpen: true }),
       closeProjectSelector: () => set({ projectSelectorOpen: false }),
+      openProjectForm: () => set({ projectFormOpen: true }),
+      closeProjectForm: () => set({ projectFormOpen: false }),
     }),
     {
       name: 'esant-project',

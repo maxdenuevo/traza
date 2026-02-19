@@ -151,12 +151,12 @@ export function ProjectFormModal({ mode, project, isOpen, onClose }: ProjectForm
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black bg-opacity-50 z-50 transition-opacity"
+        className="fixed inset-0 bg-black bg-opacity-50 z-[60] transition-opacity"
         onClick={onClose}
       />
 
       {/* Modal */}
-      <div className="fixed inset-x-4 top-10 max-w-3xl mx-auto z-50 animate-slideDown max-h-[90vh] overflow-y-auto">
+      <div className="fixed inset-x-4 top-10 max-w-3xl mx-auto z-[60] animate-slideDown max-h-[90vh] overflow-y-auto">
         <div className="bg-white rounded-2xl shadow-2xl">
           {/* Header */}
           <div className="p-6 border-b border-gray-200 sticky top-0 bg-white rounded-t-2xl">
