@@ -26,7 +26,6 @@ const PermisosPage = lazy(() => import('./pages/Permisos').then(m => ({ default:
 const MaterialesPage = lazy(() => import('./pages/Materiales').then(m => ({ default: m.MaterialesPage })));
 const SeguimientoPage = lazy(() => import('./pages/Seguimiento').then(m => ({ default: m.SeguimientoPage })));
 const FacturasPage = lazy(() => import('./pages/Facturas').then(m => ({ default: m.FacturasPage })));
-const InformesPage = lazy(() => import('./pages/Informes').then(m => ({ default: m.InformesPage })));
 
 function AppContent() {
   const { user, isLoading, initialize } = useAuthStore();
@@ -87,7 +86,6 @@ function AppContent() {
                     <Route path="/materiales" element={<MaterialesPage />} />
                     <Route path="/seguimiento" element={<SeguimientoPage />} />
                     <Route path="/facturas" element={<FacturasPage />} />
-                    <Route path="/informes" element={<InformesPage />} />
                   </Routes>
                 </Suspense>
               </Layout>

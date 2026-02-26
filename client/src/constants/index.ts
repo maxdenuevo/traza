@@ -181,6 +181,7 @@ export const PRESUPUESTO_CATEGORIAS = [
   'servicio',
   'mano_de_obra',
   'materiales',
+  'subcontratos',
   'adicionales',
   'otro'
 ];
@@ -189,6 +190,7 @@ export const PRESUPUESTO_CATEGORIA_LABELS: Record<string, string> = {
   servicio: 'Servicio',
   mano_de_obra: 'Mano de obra',
   materiales: 'Materiales',
+  subcontratos: 'Subcontratos',
   adicionales: 'Adicionales',
   otro: 'Otro',
   // Keep old labels for backwards compatibility
@@ -212,6 +214,11 @@ export const PRESUPUESTO_CATEGORIA_COLORS: Record<string, StatusColor> = {
     bg: 'bg-esant-gray-100',
     text: 'text-esant-gray-700',
     indicator: 'bg-esant-gray-400'
+  },
+  subcontratos: {
+    bg: 'bg-esant-gray-100',
+    text: 'text-esant-gray-700',
+    indicator: 'bg-esant-gray-700'
   },
   adicionales: {
     bg: 'bg-red-50',

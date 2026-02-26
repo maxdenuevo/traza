@@ -7,16 +7,18 @@ import { Calendar } from '../../components/features/Calendar';
 import { VisitaForm } from '../../components/features/VisitaForm';
 import { AreaAsuntosList } from '../../components/features/AreaAsuntosList';
 import { VisitaHistorial } from '../../components/features/VisitaHistorial';
-import { DailyOperations } from '../../components/features/DailyOperations';
+import { CheckboxSection } from '../../components/features/CheckboxSection';
+import { AsistenciaSection } from '../../components/features/AsistenciaSection';
 import { Modal } from '../../components/common/Modal';
 import { Card } from '../../components/common/Card';
 import { Icon } from '../../components/common/Icon';
+import { StatusBadge, type ProgramaStatus } from '../../components/common/StatusBadge';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { FAB } from '../../components/common/FAB';
 import { NoProjectSelected } from '../../components/common/NoProjectSelected';
 import { useProjectStore } from '../../store/useProjectStore';
 import { useAuthStore } from '../../store/useAuthStore';
-import { SECTORS } from '../../store/useProgramaStore';
+import { useProgramaStore, SECTORS } from '../../store/useProgramaStore';
 import {
   useVisitas,
   useProximaVisita,
@@ -33,11 +35,12 @@ export const VisitasPage = () => {
   const navigate = useNavigate();
   const { currentProject } = useProjectStore();
   const { user } = useAuthStore();
+  const { getSectorStatus } = useProgramaStore();
   const [showNewVisitModal, setShowNewVisitModal] = useState(false);
   const [currentVisita, setCurrentVisita] = useState<Visita | null>(null);
+  const [showPrograma, setShowPrograma] = useState(true);
   const [showSectores, setShowSectores] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [showDailyOps, setShowDailyOps] = useState(false);
 
   // Fetch data from Supabase
   const { data: visitas = [], isLoading } = useVisitas(currentProject?.id || '');
@@ -221,23 +224,13 @@ export const VisitasPage = () => {
 
   return (
     <div className="space-y-4 pb-20">
-      {/* Title - Libro de Obra */}
+      {/* Title - Project Name (C1: reemplazar "Libro de Obra" con nombre del proyecto) */}
       <Card className="p-6">
-        <h2 className="font-semibold text-xl text-gray-900 mb-1">Libro de Obra</h2>
-        <p className="text-sm text-gray-600">Gestión de visitas y sectores</p>
+        <h2 className="font-semibold text-xl text-gray-900 mb-1">{currentProject.nombre}</h2>
+        <p className="text-sm text-gray-600">Libro de Obra</p>
       </Card>
 
-      {/* Calendar */}
-      <Calendar
-        visitas={visitas}
-        proximaVisita={proximaVisita?.fecha}
-        onDayClick={(date) => {
-          setSelectedDate(date);
-          setShowDailyOps(true);
-        }}
-      />
-
-      {/* Project Dates */}
+      {/* Project Dates — moved above calendar (C1) */}
       {(currentProject?.fechaInicio || currentProject?.fechaEstimadaFin) && (
         <Card className="p-4">
           <div className="flex justify-between text-sm">
@@ -261,10 +254,57 @@ export const VisitasPage = () => {
         </Card>
       )}
 
-      {/* Daily Operations (Checkbox + Asistencia) */}
-      {showDailyOps && (
-        <DailyOperations fecha={selectedDate} />
-      )}
+      {/* Calendar */}
+      <Calendar
+        visitas={visitas}
+        proximaVisita={proximaVisita?.fecha}
+        onDayClick={(date) => {
+          setSelectedDate(date);
+        }}
+      />
+
+      {/* Checkbox Section - always visible, collapsable (C1) */}
+      <CheckboxSection fecha={selectedDate} />
+
+      {/* Asistencia Section - always visible, collapsable (C1) */}
+      <AsistenciaSection fecha={selectedDate} />
+
+      {/* Programa Summary - sectors with statuses */}
+      <Card className="overflow-hidden">
+        <button
+          onClick={() => setShowPrograma(!showPrograma)}
+          className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+        >
+          <h3 className="font-semibold text-gray-900">Programa</h3>
+          <Icon
+            name={showPrograma ? 'chevron-up' : 'chevron-down'}
+            size={20}
+            className="text-gray-400"
+          />
+        </button>
+
+        {showPrograma && (
+          <div className="border-t border-gray-100">
+            {SECTORS.map((sector, index) => {
+              const status = (currentProject ? getSectorStatus(currentProject.id, sector) : 'pausado') as ProgramaStatus;
+              const isLast = index === SECTORS.length - 1;
+
+              return (
+                <button
+                  key={sector}
+                  onClick={() => navigate('/programa')}
+                  className={`w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors ${
+                    !isLast ? 'border-b border-gray-100' : ''
+                  }`}
+                >
+                  <span className="text-gray-900">{sector}</span>
+                  <StatusBadge status={status} disabled />
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </Card>
 
       {/* Próxima Visita Card */}
       {proximaVisita && (

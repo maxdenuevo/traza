@@ -15,7 +15,6 @@ import { CurrencyInput } from '../../components/common/CurrencyInput';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { NoProjectSelected } from '../../components/common/NoProjectSelected';
 import { useProjectStore } from '../../store/useProjectStore';
-import { useProgramaStore, SECTORS } from '../../store/useProgramaStore';
 import {
   usePresupuestoByCategory,
   usePresupuestoSummary,
@@ -25,12 +24,11 @@ import {
 } from '../../hooks/usePresupuesto';
 import type { PresupuestoItem, PresupuestoCategoria } from '../../types';
 
-// Main budget categories (not adicionales)
+// Main budget categories (not adicionales or subcontratos)
 const MAIN_CATEGORIES = ['servicio', 'mano_de_obra', 'materiales'];
 
 export const PresupuestoPage = () => {
   const { currentProject } = useProjectStore();
-  const { getSectorData } = useProgramaStore();
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['proyecto']));
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [showAddModal, setShowAddModal] = useState(false);
@@ -52,23 +50,26 @@ export const PresupuestoPage = () => {
   const updateMutation = useUpdatePresupuestoItem();
   const deleteMutation = useDeletePresupuestoItem();
 
-  // Separate main budget from adicionales
-  const { mainBudget, adicionales } = useMemo(() => {
+  // Separate main budget, subcontratos and adicionales
+  const { mainBudget, subcontratos, adicionales } = useMemo(() => {
     const main: typeof categoryGroups = [];
+    const subs: typeof categoryGroups = [];
     const extras: typeof categoryGroups = [];
 
     categoryGroups.forEach(group => {
       if (group.categoria === 'adicionales') {
         extras.push(group);
+      } else if (group.categoria === 'subcontratos') {
+        subs.push(group);
       } else if (MAIN_CATEGORIES.includes(group.categoria)) {
         main.push(group);
       } else {
-        // Map old categories to new ones for display
+        // Map old categories to main for display
         main.push(group);
       }
     });
 
-    return { mainBudget: main, adicionales: extras };
+    return { mainBudget: main, subcontratos: subs, adicionales: extras };
   }, [categoryGroups]);
 
   // Calculate totals for main budget
@@ -78,6 +79,13 @@ export const PresupuestoPage = () => {
     return { estimado, real };
   }, [mainBudget]);
 
+  // Calculate totals for subcontratos
+  const subcontratosTotals = useMemo(() => {
+    const estimado = subcontratos.reduce((sum, g) => sum + g.totalEstimado, 0);
+    const real = subcontratos.reduce((sum, g) => sum + g.totalReal, 0);
+    return { estimado, real };
+  }, [subcontratos]);
+
   // Calculate totals for adicionales
   const adicionalesTotals = useMemo(() => {
     const estimado = adicionales.reduce((sum, g) => sum + g.totalEstimado, 0);
@@ -85,32 +93,12 @@ export const PresupuestoPage = () => {
     return { estimado, real };
   }, [adicionales]);
 
-  // Get sector budget data from programa store
-  const sectorBudgets = useMemo(() => {
-    if (!currentProject) return [];
-
-    return SECTORS.map(sector => {
-      const data = getSectorData(currentProject.id, sector);
-      return {
-        sector,
-        estimado: data?.valorEstimado || 0,
-        actual: data?.valorActual || 0,
-      };
-    }).filter(s => s.estimado > 0 || s.actual > 0);
-  }, [currentProject, getSectorData]);
-
-  const sectorTotals = useMemo(() => {
-    const estimado = sectorBudgets.reduce((sum, s) => sum + s.estimado, 0);
-    const actual = sectorBudgets.reduce((sum, s) => sum + s.actual, 0);
-    return { estimado, actual };
-  }, [sectorBudgets]);
-
-  // Grand total
+  // Grand total (includes subcontratos)
   const grandTotal = useMemo(() => {
-    const estimado = mainBudgetTotals.estimado + adicionalesTotals.estimado;
-    const real = mainBudgetTotals.real + adicionalesTotals.real;
+    const estimado = mainBudgetTotals.estimado + subcontratosTotals.estimado + adicionalesTotals.estimado;
+    const real = mainBudgetTotals.real + subcontratosTotals.real + adicionalesTotals.real;
     return { estimado, real };
-  }, [mainBudgetTotals, adicionalesTotals]);
+  }, [mainBudgetTotals, subcontratosTotals, adicionalesTotals]);
 
   const toggleSection = (section: string) => {
     setExpandedSections((prev) => {
@@ -233,7 +221,7 @@ export const PresupuestoPage = () => {
         <p className="text-sm text-esant-gray-600">Control financiero del proyecto</p>
       </Card>
 
-      {/* 1. PROYECTO PRESUPUESTADO */}
+      {/* 1. PRESUPUESTO (C5: renombrado de "Proyecto presupuestado") */}
       <div className="bg-esant-white rounded-xl shadow-esant overflow-hidden">
         <button
           onClick={() => toggleSection('proyecto')}
@@ -242,7 +230,7 @@ export const PresupuestoPage = () => {
           <div className="flex items-center gap-3">
             <div className="w-3 h-3 rounded-sm bg-esant-black"></div>
             <div>
-              <h3 className="font-semibold text-lg text-esant-black text-left">Proyecto presupuestado</h3>
+              <h3 className="font-semibold text-lg text-esant-black text-left">Presupuesto</h3>
               <div className="flex items-center gap-3 text-xs text-esant-gray-600 mt-1">
                 <span>Estimado: {formatCurrency(mainBudgetTotals.estimado)}</span>
                 <span>•</span>
@@ -321,56 +309,75 @@ export const PresupuestoPage = () => {
         )}
       </div>
 
-      {/* 2. ESTADO PROGRAMA (por sector) */}
-      {sectorBudgets.length > 0 && (
-        <div className="bg-esant-white rounded-xl shadow-esant overflow-hidden">
-          <button
-            onClick={() => toggleSection('sectores')}
-            className="w-full p-5 flex items-center justify-between btn-touch hover:bg-esant-gray-100 smooth-transition"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-3 h-3 rounded-sm bg-esant-gray-500"></div>
-              <div>
-                <h3 className="font-semibold text-lg text-esant-black text-left">Estado programa</h3>
-                <div className="flex items-center gap-3 text-xs text-esant-gray-600 mt-1">
-                  <span>Estimado: {formatCurrency(sectorTotals.estimado)}</span>
-                  <span>•</span>
-                  <span className={sectorTotals.actual > sectorTotals.estimado ? 'text-esant-red font-medium' : ''}>
-                    Actual: {formatCurrency(sectorTotals.actual)}
-                  </span>
-                </div>
+      {/* 2. VALOR SUBCONTRATOS (C5: nueva sección) */}
+      <div className="bg-esant-white rounded-xl shadow-esant overflow-hidden">
+        <button
+          onClick={() => toggleSection('subcontratos')}
+          className="w-full p-5 flex items-center justify-between btn-touch hover:bg-esant-gray-100 smooth-transition"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-3 h-3 rounded-sm bg-esant-gray-700"></div>
+            <div>
+              <h3 className="font-semibold text-lg text-esant-black text-left">Valor subcontratos</h3>
+              <div className="flex items-center gap-3 text-xs text-esant-gray-600 mt-1">
+                <span>Estimado: {formatCurrency(subcontratosTotals.estimado)}</span>
+                <span>•</span>
+                <span className={subcontratosTotals.real > subcontratosTotals.estimado ? 'text-esant-red font-medium' : ''}>
+                  Gastado: {formatCurrency(subcontratosTotals.real)}
+                </span>
               </div>
             </div>
-            <Icon
-              name={expandedSections.has('sectores') ? 'chevron-up' : 'chevron-down'}
-              size={20}
-              className="text-esant-gray-600"
-            />
-          </button>
+          </div>
+          <Icon
+            name={expandedSections.has('subcontratos') ? 'chevron-up' : 'chevron-down'}
+            size={20}
+            className="text-esant-gray-600"
+          />
+        </button>
 
-          {expandedSections.has('sectores') && (
-            <div className="border-t border-esant-gray-200 p-4 space-y-2">
-              {sectorBudgets.map(({ sector, estimado, actual }) => {
-                const overBudget = actual > estimado;
+        {expandedSections.has('subcontratos') && (
+          <div className="border-t border-esant-gray-200">
+            {subcontratos.length > 0 ? (
+              subcontratos.flatMap(({ items }) => items).map((item) => {
+                const overBudget = (item.montoReal || 0) > item.montoEstimado;
                 return (
-                  <div key={sector} className="flex items-center justify-between py-2 border-b border-esant-gray-100 last:border-0">
-                    <span className="text-sm text-esant-gray-800">{sector}</span>
+                  <div
+                    key={item.id}
+                    className="p-4 border-b border-esant-gray-100 last:border-0 flex items-center justify-between"
+                  >
+                    <div className="flex-1">
+                      <span className="text-sm text-esant-gray-800">{item.descripcion}</span>
+                    </div>
                     <div className="flex items-center gap-3 text-sm">
-                      <span className="text-esant-gray-600">{formatCurrency(estimado)}</span>
+                      <span className="text-esant-gray-600">{formatCurrency(item.montoEstimado)}</span>
                       <span className="text-esant-gray-400">/</span>
                       <span className={overBudget ? 'text-esant-red font-medium' : 'text-esant-black'}>
-                        {formatCurrency(actual)}
+                        {formatCurrency(item.montoReal || 0)}
                       </span>
+                      <button
+                        onClick={() => handleEdit(item)}
+                        className="p-1 hover:bg-esant-gray-100 rounded transition-colors"
+                      >
+                        <Icon name="edit" size={14} className="text-esant-gray-500" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(item.id, item.descripcion)}
+                        className="p-1 hover:bg-red-50 rounded transition-colors"
+                      >
+                        <Icon name="trash-2" size={14} className="text-esant-red" />
+                      </button>
                     </div>
                   </div>
                 );
-              })}
-            </div>
-          )}
-        </div>
-      )}
+              })
+            ) : (
+              <p className="text-sm text-esant-gray-500 text-center py-4">Sin subcontratos registrados</p>
+            )}
+          </div>
+        )}
+      </div>
 
-      {/* 3. ADICIONALES AL PROGRAMA */}
+      {/* 3. ADICIONALES AL PROGRAMA (C5: movido a posición 3, incluye opción subcontratos en dropdown) */}
       <div className="bg-esant-white rounded-xl shadow-esant overflow-hidden">
         <button
           onClick={() => toggleSection('adicionales')}
@@ -443,7 +450,7 @@ export const PresupuestoPage = () => {
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold">Total Final</h3>
-            <p className="text-sm text-white/60">Presupuesto + Adicionales</p>
+            <p className="text-sm text-white/60">Presupuesto + Subcontratos + Adicionales</p>
           </div>
           <div className="text-right">
             <p className="text-2xl font-bold">{formatCurrency(grandTotal.real)}</p>

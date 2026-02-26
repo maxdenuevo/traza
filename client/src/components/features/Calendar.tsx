@@ -121,10 +121,6 @@ export const Calendar = ({ visitas = [], onDayClick, proximaVisita }: CalendarPr
           <div className="w-3 h-3 bg-yellow-400 rounded-sm"></div>
           <span className="text-esant-gray-600">Próxima</span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-esant-black rounded-sm"></div>
-          <span className="text-esant-gray-600">Programada</span>
-        </div>
       </div>
     </div>
   );

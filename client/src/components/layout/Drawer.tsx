@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useMemo, useState } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Icon } from '../common/Icon';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -19,57 +19,16 @@ interface NavItem {
   permissions: Permission[];
 }
 
-interface NavGroup {
-  id: string;
-  label: string;
-  icon: string;
-  collapsible: boolean;
-  items?: NavItem[];
-  permissions: Permission[];
-}
-
-// Navigation structure with grouping
-const DRAWER_NAV_GROUPS: NavGroup[] = [
-  {
-    id: 'libro-obra',
-    label: 'Libro de Obra',
-    icon: 'calendar',
-    collapsible: true,
-    permissions: ['libro_obra'],
-    items: [
-      { id: 'visitas', label: 'Calendario', icon: 'calendar', permissions: ['libro_obra'] },
-      { id: 'programa', label: 'Programa', icon: 'list-checks', permissions: ['programa_ver'] },
-      { id: 'pendientes', label: 'Pendientes', icon: 'clipboard-list', permissions: ['pendientes_ver'] },
-      { id: 'facturas', label: 'Facturas', icon: 'receipt', permissions: ['facturas'] },
-    ],
-  },
-  {
-    id: 'presupuesto',
-    label: 'Presupuesto / Gastos',
-    icon: 'wallet',
-    collapsible: false,
-    permissions: ['presupuesto'],
-  },
-  {
-    id: 'documentos',
-    label: 'Documentos',
-    icon: 'folder',
-    collapsible: false,
-    permissions: ['documentos'],
-  },
-  {
-    id: 'proyectos-group',
-    label: 'Proyectos',
-    icon: 'briefcase',
-    collapsible: true,
-    permissions: ['equipo_ver'],
-    items: [
-      { id: 'seguimiento', label: 'Seguimiento', icon: 'activity', permissions: ['programa_ver'] },
-      { id: 'equipo', label: 'Equipo', icon: 'users', permissions: ['equipo_ver'] },
-      { id: 'materiales', label: 'Materiales', icon: 'package', permissions: ['materiales'] },
-      { id: 'informes', label: 'Informes', icon: 'file-text', permissions: ['informes_ver'] },
-    ],
-  },
+// Flat navigation structure (C3: aplanar toda la navegación)
+const DRAWER_NAV_ITEMS: NavItem[] = [
+  { id: 'programa', label: 'Programa', icon: 'list-checks', permissions: ['programa_ver'] },
+  { id: 'pendientes', label: 'Pendientes', icon: 'clipboard-list', permissions: ['pendientes_ver'] },
+  { id: 'facturas', label: 'Facturas', icon: 'receipt', permissions: ['facturas'] },
+  { id: 'seguimiento', label: 'Seguimiento', icon: 'activity', permissions: ['programa_ver'] },
+  { id: 'equipo', label: 'Equipo', icon: 'users', permissions: ['equipo_ver'] },
+  { id: 'materiales', label: 'Materiales', icon: 'package', permissions: ['materiales'] },
+  { id: 'presupuesto', label: 'Presupuesto / Gastos', icon: 'wallet', permissions: ['presupuesto'] },
+  { id: 'documentos', label: 'Documentos', icon: 'folder', permissions: ['documentos'] },
 ];
 
 export const Drawer = ({ isOpen, onClose, onOpenProjectSelector }: DrawerProps) => {
@@ -80,39 +39,13 @@ export const Drawer = ({ isOpen, onClose, onOpenProjectSelector }: DrawerProps) 
   const { data: projects } = useProyectos();
   const { hasAllPermissions, userRole } = usePermissions();
 
-  // Track expanded groups
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['libro-obra']));
-
   const currentPath = location.pathname.split('/')[1] || 'visitas';
 
-  // Filter nav groups and items based on user permissions
-  const visibleNavGroups = useMemo(() => {
-    return DRAWER_NAV_GROUPS.filter(group => {
-      // Check if user has permission for the group
-      if (group.permissions.length > 0 && !hasAllPermissions(group.permissions)) {
-        return false;
-      }
-
-      // If group has items, filter them too
-      if (group.items) {
-        const visibleItems = group.items.filter(item =>
-          item.permissions.length === 0 || hasAllPermissions(item.permissions)
-        );
-        return visibleItems.length > 0;
-      }
-
-      return true;
-    }).map(group => {
-      if (group.items) {
-        return {
-          ...group,
-          items: group.items.filter(item =>
-            item.permissions.length === 0 || hasAllPermissions(item.permissions)
-          ),
-        };
-      }
-      return group;
-    });
+  // Filter nav items based on user permissions
+  const visibleNavItems = useMemo(() => {
+    return DRAWER_NAV_ITEMS.filter(item =>
+      item.permissions.length === 0 || hasAllPermissions(item.permissions)
+    );
   }, [hasAllPermissions, userRole]);
 
   // Handle browser back button - close drawer instead of navigating
@@ -134,18 +67,6 @@ export const Drawer = ({ isOpen, onClose, onOpenProjectSelector }: DrawerProps) 
     };
   }, [isOpen, handlePopState]);
 
-  const toggleGroup = (groupId: string) => {
-    setExpandedGroups(prev => {
-      const next = new Set(prev);
-      if (next.has(groupId)) {
-        next.delete(groupId);
-      } else {
-        next.add(groupId);
-      }
-      return next;
-    });
-  };
-
   const handleNavClick = (id: string) => {
     navigate(`/${id}`);
     onClose();
@@ -165,12 +86,7 @@ export const Drawer = ({ isOpen, onClose, onOpenProjectSelector }: DrawerProps) 
     onClose();
   };
 
-  // Check if a group or item is active
   const isActive = (id: string) => currentPath === id;
-  const isGroupActive = (group: NavGroup) => {
-    if (!group.items) return currentPath === group.id;
-    return group.items.some(item => currentPath === item.id);
-  };
 
   // Get other projects for the "Cambiar proyecto" section
   const otherProjects = projects?.filter(p => p.id !== currentProject?.id) || [];
@@ -201,80 +117,25 @@ export const Drawer = ({ isOpen, onClose, onOpenProjectSelector }: DrawerProps) 
 
         {/* Navigation Items */}
         <nav className="flex-1 py-2 overflow-y-auto">
-          {visibleNavGroups.map((group) => {
-            const groupActive = isGroupActive(group);
-            const isExpanded = expandedGroups.has(group.id);
+          {visibleNavItems.map((item) => {
+            const itemActive = isActive(item.id);
 
-            // Non-collapsible item (single link)
-            if (!group.collapsible || !group.items) {
-              return (
-                <button
-                  key={group.id}
-                  onClick={() => handleNavClick(group.id)}
-                  className={`w-full flex items-center gap-4 px-6 py-4 text-left transition-colors relative ${
-                    groupActive
-                      ? 'bg-white/10 text-white'
-                      : 'text-white/80 hover:bg-white/5 hover:text-white'
-                  }`}
-                >
-                  {groupActive && (
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#DC2626]" />
-                  )}
-                  <Icon name={group.icon} className="w-5 h-5" />
-                  <span className="font-medium">{group.label}</span>
-                </button>
-              );
-            }
-
-            // Collapsible group
             return (
-              <div key={group.id}>
-                {/* Group header */}
-                <button
-                  onClick={() => toggleGroup(group.id)}
-                  className={`w-full flex items-center justify-between px-6 py-4 text-left transition-colors ${
-                    groupActive && !isExpanded
-                      ? 'bg-white/10 text-white'
-                      : 'text-white/80 hover:bg-white/5 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-4">
-                    <Icon name={group.icon} className="w-5 h-5" />
-                    <span className="font-medium">{group.label}</span>
-                  </div>
-                  <Icon
-                    name={isExpanded ? 'chevron-up' : 'chevron-down'}
-                    className="w-4 h-4 text-white/60"
-                  />
-                </button>
-
-                {/* Group items */}
-                {isExpanded && group.items && (
-                  <div className="bg-white/5">
-                    {group.items.map((item) => {
-                      const itemActive = isActive(item.id);
-
-                      return (
-                        <button
-                          key={item.id}
-                          onClick={() => handleNavClick(item.id)}
-                          className={`w-full flex items-center gap-4 pl-14 pr-6 py-3 text-left transition-colors relative ${
-                            itemActive
-                              ? 'bg-white/10 text-white'
-                              : 'text-white/70 hover:bg-white/5 hover:text-white'
-                          }`}
-                        >
-                          {itemActive && (
-                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#DC2626]" />
-                          )}
-                          <Icon name={item.icon} className="w-4 h-4" />
-                          <span className="text-sm">{item.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
+              <button
+                key={item.id}
+                onClick={() => handleNavClick(item.id)}
+                className={`w-full flex items-center gap-4 px-6 py-4 text-left transition-colors relative ${
+                  itemActive
+                    ? 'bg-white/10 text-white'
+                    : 'text-white/80 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                {itemActive && (
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#DC2626]" />
                 )}
-              </div>
+                <Icon name={item.icon} className="w-5 h-5" />
+                <span className="font-medium">{item.label}</span>
+              </button>
             );
           })}
         </nav>

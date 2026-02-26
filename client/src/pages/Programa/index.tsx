@@ -13,8 +13,7 @@ import { NoProjectSelected } from '../../components/common/NoProjectSelected';
 import { useProjectStore } from '../../store/useProjectStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useProgramaStore, SECTORS, type SectorStatus, type SectorData } from '../../store/useProgramaStore';
-import { usePendientesByArea } from '../../hooks/usePendientes';
-import { formatCurrency } from '../../constants';
+import { usePendientesByArea, useCreatePendiente } from '../../hooks/usePendientes';
 
 const STATUS_CYCLE: SectorStatus[] = ['pausado', 'en_curso', 'entregado'];
 const STATUS_LABELS: Record<SectorStatus, string> = {
@@ -32,9 +31,13 @@ export const ProgramaPage = () => {
   const [expandedSector, setExpandedSector] = useState<string | null>(null);
   const [editingSector, setEditingSector] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<SectorData>>({});
+  const [showNewNoteModal, setShowNewNoteModal] = useState(false);
+  const [newNoteSector, setNewNoteSector] = useState<string>('');
+  const [newNoteText, setNewNoteText] = useState('');
 
   // Fetch pendientes for count by sector
   const { data: pendientesByArea = [] } = usePendientesByArea(currentProject?.id || '');
+  const createPendienteMutation = useCreatePendiente();
 
   // Get pending count for a sector
   const getPendingCount = (sector: string): number => {
@@ -90,6 +93,35 @@ export const ProgramaPage = () => {
     updateSectorData(currentProject.id, editingSector, editForm);
     toast.success('Fechas actualizadas');
     setEditingSector(null);
+  };
+
+  // Handle creating a note as a pendiente
+  const handleCreateNote = async () => {
+    if (!newNoteText.trim() || !currentProject || !user) return;
+
+    try {
+      await createPendienteMutation.mutateAsync({
+        pendiente: {
+          proyectoId: currentProject.id,
+          area: newNoteSector,
+          tarea: newNoteText.trim(),
+          encargadoId: user.id,
+        },
+        userId: user.id,
+      });
+      toast.success('Nota creada como pendiente');
+      setShowNewNoteModal(false);
+      setNewNoteText('');
+      setNewNoteSector('');
+    } catch {
+      toast.error('Error al crear nota');
+    }
+  };
+
+  const openNewNote = (sectorName: string) => {
+    setNewNoteSector(sectorName);
+    setNewNoteText('');
+    setShowNewNoteModal(true);
   };
 
   // Calculate delay days
@@ -166,6 +198,30 @@ export const ProgramaPage = () => {
         </div>
       </Card>
 
+      {/* Project Dates (C2: fechas al top) */}
+      {(currentProject?.fechaInicio || currentProject?.fechaEstimadaFin) && (
+        <Card className="p-4">
+          <div className="flex justify-between text-sm">
+            {currentProject?.fechaInicio && (
+              <div>
+                <span className="text-esant-gray-500">Inicio de obra: </span>
+                <span className="font-medium text-esant-black">
+                  {format(new Date(currentProject.fechaInicio), "dd/MM/yy", { locale: es })}
+                </span>
+              </div>
+            )}
+            {currentProject?.fechaEstimadaFin && (
+              <div className="text-right">
+                <span className="text-esant-gray-500">Entrega propuesta: </span>
+                <span className="font-medium text-esant-black">
+                  {format(new Date(currentProject.fechaEstimadaFin), "dd/MM/yy", { locale: es })}
+                </span>
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
+
       {/* Admin notice */}
       {!canEdit && (
         <div className="bg-esant-gray-100 border border-esant-gray-200 rounded-xl p-4 flex items-start gap-3">
@@ -176,7 +232,7 @@ export const ProgramaPage = () => {
         </div>
       )}
 
-      {/* Sectors list */}
+      {/* Sectors list — Programa section (C2: sección Programa primero) */}
       <div className="bg-esant-white rounded-xl shadow-esant overflow-hidden">
         {SECTORS.map((sector, index) => {
           const status = getSectorStatus(currentProject.id, sector) as ProgramaStatus;
@@ -226,75 +282,24 @@ export const ProgramaPage = () => {
                 />
               </div>
 
-              {/* Expanded details */}
+              {/* Expanded details (C2: simplified — status + "Nueva nota" button) */}
               {isExpanded && (
                 <div className="px-4 pb-4 pl-11">
                   <div className="bg-esant-gray-50 rounded-lg p-4 space-y-3">
-                    {/* Dates row */}
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-esant-gray-500">Inicio:</span>{' '}
-                        <span className="font-medium text-esant-black">
-                          {sectorData?.fechaInicio
-                            ? format(parseISO(sectorData.fechaInicio), "d MMM yyyy", { locale: es })
-                            : '—'}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-esant-gray-500">Entrega propuesta:</span>{' '}
-                        <span className={`font-medium ${delayDays > 0 ? 'text-esant-red' : 'text-esant-black'}`}>
-                          {sectorData?.fechaEntregaPropuesta
-                            ? format(parseISO(sectorData.fechaEntregaPropuesta), "d MMM yyyy", { locale: es })
-                            : '—'}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Real delivery date (if delivered) */}
-                    {sectorData?.fechaEntregaReal && (
-                      <div className="text-sm">
-                        <span className="text-esant-gray-500">Entrega real:</span>{' '}
-                        <span className="font-medium text-esant-black">
-                          {format(parseISO(sectorData.fechaEntregaReal), "d MMM yyyy", { locale: es })}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Obras description */}
-                    {sectorData?.obras && (
-                      <div className="text-sm">
-                        <span className="text-esant-gray-500">Obras:</span>{' '}
-                        <span className="text-esant-gray-800">{sectorData.obras}</span>
-                      </div>
-                    )}
-
-                    {/* Values - Estimado vs Actual */}
-                    {(sectorData?.valorEstimado || sectorData?.valorActual) && (
-                      <div className="grid grid-cols-2 gap-4 text-sm pt-2 border-t border-esant-gray-200">
-                        <div>
-                          <span className="text-esant-gray-500">Valor estimado:</span>{' '}
-                          <span className="font-medium text-esant-black">
-                            {sectorData?.valorEstimado ? formatCurrency(sectorData.valorEstimado) : '—'}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-esant-gray-500">Valor actual:</span>{' '}
-                          <span className={`font-medium ${
-                            sectorData?.valorActual && sectorData?.valorEstimado && sectorData.valorActual > sectorData.valorEstimado
-                              ? 'text-esant-red'
-                              : 'text-esant-black'
-                          }`}>
-                            {sectorData?.valorActual ? formatCurrency(sectorData.valorActual) : '—'}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-
                     {/* Status info */}
-                    <div className="text-sm pt-2 border-t border-esant-gray-200">
+                    <div className="text-sm">
                       <span className="text-esant-gray-500">Estado:</span>{' '}
                       <span className="font-medium text-esant-black">{STATUS_LABELS[status]}</span>
                     </div>
+
+                    {/* Nueva nota button (C2: creates a pendiente) */}
+                    <button
+                      onClick={() => openNewNote(sector)}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-dashed border-esant-gray-300 rounded-lg text-sm text-esant-gray-600 hover:border-esant-gray-400 hover:text-esant-black transition-colors"
+                    >
+                      <Icon name="plus" size={16} />
+                      Nueva nota
+                    </button>
 
                     {/* Edit button for admins */}
                     {canEdit && (
@@ -416,6 +421,38 @@ export const ProgramaPage = () => {
 
           <Button variant="primary" fullWidth onClick={handleSaveEdit}>
             Guardar cambios
+          </Button>
+        </div>
+      </Modal>
+
+      {/* New Note Modal (C2: nota que se crea como pendiente) */}
+      <Modal
+        isOpen={showNewNoteModal}
+        onClose={() => setShowNewNoteModal(false)}
+        title={`Nueva nota — ${newNoteSector}`}
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-esant-gray-600 mb-2">
+              Nota
+            </label>
+            <textarea
+              value={newNoteText}
+              onChange={(e) => setNewNoteText(e.target.value)}
+              placeholder="Escribe una nota que se creará como pendiente..."
+              rows={4}
+              className="w-full px-4 py-3 border-2 border-esant-gray-200 rounded-lg text-esant-black placeholder-esant-gray-400 focus:outline-none focus:border-esant-black transition-colors resize-none"
+              autoFocus
+            />
+          </div>
+
+          <Button
+            variant="primary"
+            fullWidth
+            onClick={handleCreateNote}
+            disabled={!newNoteText.trim() || createPendienteMutation.isPending}
+          >
+            {createPendienteMutation.isPending ? 'Creando...' : 'Crear como pendiente'}
           </Button>
         </div>
       </Modal>

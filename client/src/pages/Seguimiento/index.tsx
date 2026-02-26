@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../../components/common/Icon';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+import { useProjectStore } from '../../store/useProjectStore';
 import { useSeguimiento } from '../../hooks/useSeguimiento';
 import type { SectorTracking } from '../../hooks/useSeguimiento';
 import { format } from 'date-fns';
@@ -56,6 +57,9 @@ export const SeguimientoPage = () => {
   const [filterHealth, setFilterHealth] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  // Get project for fecha de entrega
+  const { currentProject } = useProjectStore();
+
   const filteredSectores = filterHealth
     ? sectores.filter((s) => s.healthStatus === filterHealth)
     : sectores;
@@ -84,9 +88,15 @@ export const SeguimientoPage = () => {
     <div className="pb-6">
       {/* Summary Header */}
       <div className="bg-white border-b border-esant-gray-200 px-4 py-4 mb-4">
-        <h2 className="text-lg font-semibold text-esant-gray-900 mb-3">
-          Resumen del Proyecto
+        <h2 className="text-lg font-semibold text-esant-gray-900 mb-1">
+          Seguimiento de Proyecto
         </h2>
+        {currentProject?.fechaEstimadaFin && (
+          <p className="text-sm text-esant-gray-500 mb-3">
+            Fecha de entrega: <span className="font-medium text-esant-gray-700">{format(new Date(currentProject.fechaEstimadaFin), "d 'de' MMMM yyyy", { locale: es })}</span>
+          </p>
+        )}
+        {!currentProject?.fechaEstimadaFin && <div className="mb-3" />}
 
         {/* Health Stats Grid */}
         <div className="grid grid-cols-4 gap-2 mb-4">

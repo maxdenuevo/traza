@@ -178,7 +178,7 @@ export interface Notificacion {
 
 // ==================== Presupuesto ====================
 
-export type PresupuestoCategoria = 'servicio' | 'mano_de_obra' | 'materiales' | 'adicionales' | 'otro' | 'diseño' | 'construccion' | 'mobiliario';
+export type PresupuestoCategoria = 'servicio' | 'mano_de_obra' | 'materiales' | 'subcontratos' | 'adicionales' | 'otro' | 'diseño' | 'construccion' | 'mobiliario';
 
 export interface PresupuestoItem {
   id: string;
