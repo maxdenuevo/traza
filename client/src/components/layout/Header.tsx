@@ -16,7 +16,7 @@ export const Header = ({
   onTitleClick
 }: HeaderProps) => {
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
+    <header className="bg-white border-b border-gray-200 sticky top-0 z-30" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       <div className="flex items-center justify-between h-14 px-4">
         {/* Hamburger Menu - 44px touch target */}
         <button
