@@ -1,5 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { presupuestoService } from '../services/presupuesto';
+import { useOfflineMutation } from './useOfflineMutation';
 
 /**
  * Get all budget items for a project
@@ -49,14 +50,12 @@ export const usePresupuestoItem = (id: string) => {
  * Create a budget item
  */
 export const useCreatePresupuestoItem = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (item: Parameters<typeof presupuestoService.create>[0]) =>
-      presupuestoService.create(item),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['presupuesto'] });
-    },
+  return useOfflineMutation<unknown, Error, Parameters<typeof presupuestoService.create>[0]>({
+    entity: 'presupuesto',
+    mutationType: 'create',
+    queryKeysToInvalidate: [['presupuesto']],
+    mutationFn: (item) => presupuestoService.create(item),
+    toPayload: (item) => ({ item }),
   });
 };
 
@@ -64,14 +63,12 @@ export const useCreatePresupuestoItem = () => {
  * Update a budget item
  */
 export const useUpdatePresupuestoItem = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Parameters<typeof presupuestoService.update>[1] }) =>
-      presupuestoService.update(id, updates),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['presupuesto'] });
-    },
+  return useOfflineMutation<unknown, Error, { id: string; updates: Parameters<typeof presupuestoService.update>[1] }>({
+    entity: 'presupuesto',
+    mutationType: 'update',
+    queryKeysToInvalidate: [['presupuesto']],
+    mutationFn: ({ id, updates }) => presupuestoService.update(id, updates),
+    toPayload: ({ id, updates }) => ({ id, updates }),
   });
 };
 
@@ -79,12 +76,11 @@ export const useUpdatePresupuestoItem = () => {
  * Delete a budget item
  */
 export const useDeletePresupuestoItem = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: string) => presupuestoService.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['presupuesto'] });
-    },
+  return useOfflineMutation<unknown, Error, string>({
+    entity: 'presupuesto',
+    mutationType: 'delete',
+    queryKeysToInvalidate: [['presupuesto']],
+    mutationFn: (id) => presupuestoService.delete(id),
+    toPayload: (id) => ({ id }),
   });
 };

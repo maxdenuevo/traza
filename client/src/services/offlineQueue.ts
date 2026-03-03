@@ -1,7 +1,7 @@
 import { get, set, del } from 'idb-keyval';
 
 // Types for queued mutations
-export type MutationEntityType = 'pendiente' | 'asistencia' | 'checkbox' | 'material' | 'factura';
+export type MutationEntityType = 'pendiente' | 'asistencia' | 'checkbox' | 'material' | 'factura' | 'presupuesto';
 export type MutationType = 'create' | 'update' | 'delete' | 'toggle';
 export type MutationPriority = 'critical' | 'normal';
 export type MutationStatus = 'pending' | 'syncing' | 'failed';
@@ -111,6 +111,7 @@ export async function getPendingCount(): Promise<{ total: number; byEntity: Reco
     checkbox: 0,
     material: 0,
     factura: 0,
+    presupuesto: 0,
   };
 
   pending.forEach(m => {

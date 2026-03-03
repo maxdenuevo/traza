@@ -56,6 +56,7 @@ const initialState = {
       checkbox: 0,
       material: 0,
       factura: 0,
+      presupuesto: 0,
     },
   },
   failedMutations: [],

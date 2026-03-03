@@ -1,5 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { materialesService } from '../services/materiales';
+import { useOfflineMutation } from './useOfflineMutation';
 import type { Material } from '../types';
 
 export const useMateriales = (proyectoId: string) => {
@@ -35,39 +36,32 @@ export const useMaterial = (id: string) => {
 };
 
 export const useCreateMaterial = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (material: Partial<Material>) =>
-      materialesService.create(material),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['materiales', variables.proyectoId] });
-      queryClient.invalidateQueries({ queryKey: ['materiales', 'by-sector', variables.proyectoId] });
-      queryClient.invalidateQueries({ queryKey: ['materiales', 'by-proveedor', variables.proyectoId] });
-    },
+  return useOfflineMutation<unknown, Error, Partial<Material>>({
+    entity: 'material',
+    mutationType: 'create',
+    queryKeysToInvalidate: [['materiales']],
+    mutationFn: (material) => materialesService.create(material),
+    toPayload: (material) => ({ material }),
   });
 };
 
 export const useUpdateMaterial = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<Material> }) =>
-      materialesService.update(id, updates),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['materiales'] });
-    },
+  return useOfflineMutation<unknown, Error, { id: string; updates: Partial<Material> }>({
+    entity: 'material',
+    mutationType: 'update',
+    queryKeysToInvalidate: [['materiales']],
+    mutationFn: ({ id, updates }) => materialesService.update(id, updates),
+    toPayload: ({ id, updates }) => ({ id, updates }),
   });
 };
 
 export const useDeleteMaterial = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: string) => materialesService.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['materiales'] });
-    },
+  return useOfflineMutation<unknown, Error, string>({
+    entity: 'material',
+    mutationType: 'delete',
+    queryKeysToInvalidate: [['materiales']],
+    mutationFn: (id) => materialesService.delete(id),
+    toPayload: (id) => ({ id }),
   });
 };
 

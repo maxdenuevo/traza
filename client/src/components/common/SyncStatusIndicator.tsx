@@ -170,6 +170,11 @@ export const SyncStatusIndicator = () => {
                       Facturas: {pendingCount.byEntity.factura}
                     </span>
                   )}
+                  {pendingCount.byEntity.presupuesto > 0 && (
+                    <span className="px-2 py-1 bg-esant-gray-700 rounded text-xs">
+                      Presupuesto: {pendingCount.byEntity.presupuesto}
+                    </span>
+                  )}
                 </div>
               </div>
             )}

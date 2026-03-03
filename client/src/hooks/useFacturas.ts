@@ -1,5 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { facturasService } from '../services/facturas';
+import { useOfflineMutation } from './useOfflineMutation';
 import type { Factura } from '../types';
 
 export const useFacturas = (proyectoId: string) => {
@@ -27,39 +28,32 @@ export const useFactura = (id: string) => {
 };
 
 export const useCreateFactura = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (factura: Partial<Factura>) =>
-      facturasService.create(factura),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['facturas', variables.proyectoId] });
-      queryClient.invalidateQueries({ queryKey: ['facturas', 'by-proveedor', variables.proyectoId] });
-      queryClient.invalidateQueries({ queryKey: ['facturas', 'stats', variables.proyectoId] });
-    },
+  return useOfflineMutation<unknown, Error, Partial<Factura>>({
+    entity: 'factura',
+    mutationType: 'create',
+    queryKeysToInvalidate: [['facturas']],
+    mutationFn: (factura) => facturasService.create(factura),
+    toPayload: (factura) => ({ factura }),
   });
 };
 
 export const useUpdateFactura = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<Factura> }) =>
-      facturasService.update(id, updates),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['facturas'] });
-    },
+  return useOfflineMutation<unknown, Error, { id: string; updates: Partial<Factura> }>({
+    entity: 'factura',
+    mutationType: 'update',
+    queryKeysToInvalidate: [['facturas']],
+    mutationFn: ({ id, updates }) => facturasService.update(id, updates),
+    toPayload: ({ id, updates }) => ({ id, updates }),
   });
 };
 
 export const useDeleteFactura = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: string) => facturasService.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['facturas'] });
-    },
+  return useOfflineMutation<unknown, Error, string>({
+    entity: 'factura',
+    mutationType: 'delete',
+    queryKeysToInvalidate: [['facturas']],
+    mutationFn: (id) => facturasService.delete(id),
+    toPayload: (id) => ({ id }),
   });
 };
 

@@ -13,6 +13,11 @@ import { useSyncStore } from '../store/useSyncStore';
 import { asistenciaService } from './asistencia';
 import { checkboxService } from './checkbox';
 import { pendientesService } from './pendientes';
+import { materialesService } from './materiales';
+import { facturasService } from './facturas';
+import { presupuestoService } from './presupuesto';
+import { getPendingFiles, processFileUpload } from './fileUploadQueue';
+import { storageService } from './storage';
 
 let isSyncing = false;
 let syncInterval: ReturnType<typeof setInterval> | null = null;
@@ -66,6 +71,54 @@ async function executeMutation(mutation: QueuedMutation): Promise<void> {
           break;
         case 'delete':
           await pendientesService.delete(p.id);
+          break;
+      }
+      break;
+    }
+
+    case 'material': {
+      const p = payload as any;
+      switch (type) {
+        case 'create':
+          await materialesService.create(p.material);
+          break;
+        case 'update':
+          await materialesService.update(p.id, p.updates);
+          break;
+        case 'delete':
+          await materialesService.delete(p.id);
+          break;
+      }
+      break;
+    }
+
+    case 'factura': {
+      const p = payload as any;
+      switch (type) {
+        case 'create':
+          await facturasService.create(p.factura);
+          break;
+        case 'update':
+          await facturasService.update(p.id, p.updates);
+          break;
+        case 'delete':
+          await facturasService.delete(p.id);
+          break;
+      }
+      break;
+    }
+
+    case 'presupuesto': {
+      const p = payload as any;
+      switch (type) {
+        case 'create':
+          await presupuestoService.create(p.item);
+          break;
+        case 'update':
+          await presupuestoService.update(p.id, p.updates);
+          break;
+        case 'delete':
+          await presupuestoService.delete(p.id);
           break;
       }
       break;
@@ -149,6 +202,22 @@ async function processQueue(): Promise<void> {
 
       // Get next mutation
       mutation = await getNextMutation();
+    }
+
+    // Process pending file uploads after mutations
+    if (navigator.onLine) {
+      const pendingFiles = await getPendingFiles();
+      for (const queuedFile of pendingFiles) {
+        if (!navigator.onLine) break;
+        try {
+          await processFileUpload(queuedFile, async (file, _entityType, entityId, proyectoId) => {
+            const result = await storageService.uploadPendienteAttachment(proyectoId, entityId, file);
+            return result.url;
+          });
+        } catch (error) {
+          console.warn('File upload failed during sync:', error);
+        }
+      }
     }
 
     // Update failed mutations list
